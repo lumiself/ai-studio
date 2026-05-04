@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieMethodsServer } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
@@ -8,17 +8,16 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export async function createServerSupabase() {
   const cookieStore = await cookies();
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll: () => cookieStore.getAll(),
-      setAll: (cookiesToSet) => {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          type SetOptions = Parameters<typeof cookieStore.set>[2];
-          cookieStore.set(name, value, options as SetOptions);
-        });
-      },
+  const cookieMethods: CookieMethodsServer = {
+    getAll: () => cookieStore.getAll(),
+    setAll: (cookiesToSet) => {
+      cookiesToSet.forEach(({ name, value, options }) => {
+        type SetOptions = Parameters<typeof cookieStore.set>[2];
+        cookieStore.set(name, value, options as SetOptions);
+      });
     },
-  });
+  };
+  return createServerClient(supabaseUrl, supabaseAnonKey, { cookies: cookieMethods });
 }
 
 export function createServiceSupabase() {
