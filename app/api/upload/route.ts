@@ -25,7 +25,13 @@ export async function POST(req: NextRequest) {
   const filename = uploadFilename(jobId, file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const inputUrl = await uploadToStorage(buffer, filename, 'uploads');
+  let inputUrl: string;
+  try {
+    inputUrl = await uploadToStorage(buffer, filename, 'uploads');
+  } catch (err) {
+    console.error('Storage upload failed:', err);
+    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+  }
 
   return NextResponse.json({ jobId, inputUrl });
 }
