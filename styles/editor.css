@@ -320,7 +320,7 @@
   font-family: inherit;
 }
 .aipe-template-card:hover { border-color: var(--aipe-accent); background: rgba(108,99,255,.04); }
-.aipe-template-card[aria-checked="true"] {
+.aipe-template-card[aria-pressed="true"] {
   border-color: var(--aipe-accent); background: rgba(108,99,255,.07);
   box-shadow: 0 0 0 1px var(--aipe-accent);
 }
@@ -351,7 +351,7 @@
   position: relative; font-family: inherit;
 }
 .aipe-preset-card:hover { border-color: var(--aipe-accent); }
-.aipe-preset-card[aria-checked="true"] {
+.aipe-preset-card[aria-pressed="true"] {
   border-color: var(--aipe-accent); box-shadow: 0 0 0 1px var(--aipe-accent);
 }
 .aipe-preset-card__thumb-wrap {
@@ -377,7 +377,7 @@
   object-fit: cover; object-position: top center; display: block; transition: transform .25s;
 }
 .aipe-preset-card:hover .aipe-preset-card__thumb { transform: scale(1.05); }
-.aipe-preset-card[aria-checked="true"]::after {
+.aipe-preset-card[aria-pressed="true"]::after {
   content: '✓';
   position: absolute; top: 6px; right: 6px;
   width: 20px; height: 20px; background: var(--aipe-accent);
