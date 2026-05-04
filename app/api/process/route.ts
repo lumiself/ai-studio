@@ -6,9 +6,8 @@ import { getPipeline, resolveModel } from '@/lib/pipelines';
 import { getAction } from '@/lib/actions';
 
 const TOKEN_COST = 1; // tokens per image processed
-const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000';
+const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -61,7 +60,13 @@ export async function POST(req: NextRequest) {
   const replicateInput = stepFn(ctx);
 
   const webhookUrl = `${WEBHOOK_BASE}/api/webhook/replicate`;
-  const predictionId = await createPrediction({ model, input: replicateInput, webhookUrl, jobId });
+  let predictionId: string;
+  try {
+    predictionId = await createPrediction({ model, input: replicateInput, webhookUrl, jobId });
+  } catch (err) {
+    console.error('Replicate createPrediction failed:', err);
+    return NextResponse.json({ error: 'Failed to start prediction' }, { status: 500 });
+  }
 
   // Insert job row into Supabase.
   const db = createServiceSupabase();
