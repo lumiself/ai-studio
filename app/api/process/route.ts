@@ -1,0 +1,88 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { deductTokens, getBalance } from '@/lib/tokens';
+import { createPrediction, getModelOverrides } from '@/lib/replicate';
+import { getPipeline, resolveModel } from '@/lib/pipelines';
+import { getAction } from '@/lib/actions';
+
+const TOKEN_COST = 1; // tokens per image processed
+const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : 'http://localhost:3000';
+
+export async function POST(req: NextRequest) {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const body = await req.json() as {
+    jobId: string;
+    inputUrl: string;
+    actionId: string;
+    bgPrompt?: string;
+  };
+
+  const { jobId, inputUrl, actionId, bgPrompt } = body;
+  if (!jobId || !inputUrl || !actionId) {
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+  }
+
+  const action = getAction(actionId);
+  if (!action) return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+
+  const pipeline = getPipeline(action.pipeline);
+  if (!pipeline) return NextResponse.json({ error: 'Unknown pipeline' }, { status: 400 });
+
+  // Check and deduct tokens before touching Replicate.
+  const balance = await getBalance(user.id);
+  if (!balance || balance.balance < TOKEN_COST) {
+    return NextResponse.json({ error: 'Insufficient token balance' }, { status: 402 });
+  }
+
+  const deducted = await deductTokens(user.id, TOKEN_COST);
+  if (!deducted) return NextResponse.json({ error: 'Insufficient token balance' }, { status: 402 });
+
+  // Resolve which model to use for step 0 (accounting for admin overrides).
+  const overrides = await getModelOverrides();
+  const model = resolveModel(pipeline, 0, overrides);
+  if (!model) return NextResponse.json({ error: 'Pipeline model not configured' }, { status: 500 });
+
+  // Build step 0 input context.
+  const ctx = {
+    inputUrl,
+    bgPrompt: bgPrompt ?? action.bg_prompt,
+    scale: action.scale,
+    faceEnhance: action.face_enhance,
+  };
+
+  const stepFn = pipeline.steps[0]?.buildInput;
+  if (!stepFn) return NextResponse.json({ error: 'Pipeline step has no buildInput' }, { status: 500 });
+
+  const replicateInput = stepFn(ctx);
+
+  const webhookUrl = `${WEBHOOK_BASE}/api/webhook/replicate`;
+  const predictionId = await createPrediction({ model, input: replicateInput, webhookUrl, jobId });
+
+  // Insert job row into Supabase.
+  const db = createServiceSupabase();
+  const { error: dbError } = await db.from('jobs').insert({
+    id: jobId,
+    user_id: user.id,
+    pipeline: pipeline.id,
+    action_id: actionId,
+    status: 'processing',
+    step: 0,
+    prediction_id: predictionId,
+    input_url: inputUrl,
+    bg_prompt: bgPrompt ?? action.bg_prompt ?? null,
+    scale: action.scale ?? null,
+    face_enhance: action.face_enhance ?? null,
+  });
+
+  if (dbError) {
+    console.error('Failed to insert job:', dbError);
+    return NextResponse.json({ error: 'Failed to create job' }, { status: 500 });
+  }
+
+  return NextResponse.json({ jobId, predictionId });
+}

@@ -1,0 +1,95 @@
+'use client';
+import { useState } from 'react';
+import { createBrowserSupabase } from '@/lib/supabase';
+import Link from 'next/link';
+
+export default function RegisterPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const supabase = createBrowserSupabase();
+    const { error: authError } = await supabase.auth.signUp({ email, password });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+    } else {
+      setDone(true);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="auth-wrap">
+        <div className="auth-card">
+          <div className="auth-logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
+            </svg>
+            AI Studio
+          </div>
+          <h1 className="auth-title">Check your email</h1>
+          <p className="auth-hint">
+            We sent a confirmation link to <strong>{email}</strong>.
+            Click it to activate your account, then ask an admin to grant you tokens.
+          </p>
+          <p className="auth-footer"><Link href="/login">Back to sign in</Link></p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/>
+          </svg>
+          AI Studio
+        </div>
+        <h1 className="auth-title">Create account</h1>
+        <form onSubmit={handleSubmit} className="auth-form">
+          <div className="auth-field">
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div className="auth-field">
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+              placeholder="min 8 characters"
+              minLength={8}
+            />
+          </div>
+          {error && <p className="auth-error">{error}</p>}
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? 'Creating account…' : 'Create account'}
+          </button>
+        </form>
+        <p className="auth-footer">
+          Already have an account? <Link href="/login">Sign in</Link>
+        </p>
+      </div>
+    </div>
+  );
+}
