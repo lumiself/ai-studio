@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceSupabase } from '@/lib/supabase';
+import { createServiceSupabase } from '@/lib/supabase/server';
 import { verifyWebhookSignature, createPrediction, getModelOverrides } from '@/lib/replicate';
 import { getPipeline, resolveModel } from '@/lib/pipelines';
 import { downloadAndStore, resultFilename } from '@/lib/storage';

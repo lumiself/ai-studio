@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 
 // Browser polls this every 4 seconds for active job statuses.
 // Never polls Replicate — only reads the Supabase jobs table.

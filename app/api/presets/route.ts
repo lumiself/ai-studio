@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 
 // GET — list all custom presets (authenticated users)
 export async function GET(_req: NextRequest) {

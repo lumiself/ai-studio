@@ -4,7 +4,7 @@ import UploadPanel from '@/components/editor/UploadPanel';
 import TemplatesPanel from '@/components/editor/TemplatesPanel';
 import ResultsPanel from '@/components/editor/ResultsPanel';
 import type { QueuedImage, ResultItem, EditorMode, BatchStats } from '@/lib/types';
-import { createBrowserSupabase } from '@/lib/supabase';
+import { createBrowserSupabase } from '@/lib/supabase/client';
 import '@/styles/editor.css';
 
 // ── State ──────────────────────────────────────────────────────────────────

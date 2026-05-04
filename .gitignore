@@ -28,6 +28,13 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# sensitive files
+passwords.txt
+*.passwords.txt
+
+# claude settings
+.claude/
+
 # vercel
 .vercel
 

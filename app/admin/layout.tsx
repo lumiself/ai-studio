@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

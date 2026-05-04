@@ -1,5 +1,5 @@
 import Replicate from 'replicate';
-import { createServiceSupabase } from './supabase';
+import { createServiceSupabase } from './supabase/server';
 
 let _client: Replicate | null = null;
 

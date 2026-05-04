@@ -1,4 +1,4 @@
-import { createServiceSupabase } from './supabase';
+import { createServiceSupabase } from './supabase/server';
 
 export interface TokenBalance {
   plan: string;

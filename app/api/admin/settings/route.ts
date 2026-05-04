@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 import { invalidateReplicateClient } from '@/lib/replicate';
 
 async function requireAdmin(req: NextRequest) {

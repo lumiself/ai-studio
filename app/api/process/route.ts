@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabase, createServiceSupabase } from '@/lib/supabase';
+import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 import { deductTokens, getBalance } from '@/lib/tokens';
 import { createPrediction, getModelOverrides } from '@/lib/replicate';
 import { getPipeline, resolveModel } from '@/lib/pipelines';
