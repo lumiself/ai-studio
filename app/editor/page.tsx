@@ -35,6 +35,7 @@ type Action =
   | { type: 'SET_TOKEN_BALANCE'; value: number }
   | { type: 'UPDATE_IMAGE_STATUS'; id: string; status: QueuedImage['status']; outputUrl?: string; error?: string; jobId?: string }
   | { type: 'ADD_RESULT'; result: ResultItem }
+  | { type: 'LOAD_HISTORY'; results: ResultItem[] }
   | { type: 'TOGGLE_RESULT'; id: string }
   | { type: 'DELETE_RESULT'; id: string }
   | { type: 'CLEAR_RESULTS' }
@@ -86,6 +87,8 @@ function reducer(state: EditorState, action: Action): EditorState {
       };
     case 'ADD_RESULT':
       return { ...state, results: [...state.results, action.result] };
+    case 'LOAD_HISTORY':
+      return { ...state, results: [...action.results, ...state.results] };
     case 'TOGGLE_RESULT':
       return { ...state, results: state.results.map(r => r.id === action.id ? { ...r, selected: !r.selected } : r) };
     case 'DELETE_RESULT': {
@@ -151,6 +154,25 @@ export default function EditorPage() {
         .single();
       if (data?.balance != null) dispatch({ type: 'SET_TOKEN_BALANCE', value: data.balance });
     });
+  }, []);
+
+  // ── Load previous results on mount ────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/jobs?history=true')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { jobs: Array<{ id: string; input_url: string; output_url: string; action_id: string }> } | null) => {
+        if (!data?.jobs?.length) return;
+        const results: ResultItem[] = data.jobs.map(j => ({
+          id: j.id,
+          imageId: j.id,
+          imageName: j.input_url.split('/').pop() ?? j.action_id,
+          inputUrl: j.input_url,
+          outputUrl: j.output_url,
+          selected: false,
+        }));
+        dispatch({ type: 'LOAD_HISTORY', results });
+      })
+      .catch(() => {});
   }, []);
 
   // ── Poll active jobs every 4 seconds ──────────────────────────────────
