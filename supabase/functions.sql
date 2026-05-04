@@ -28,6 +28,24 @@ begin
 end;
 $$;
 
+-- Creates a starter user_tokens row when a new auth user is created.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  insert into public.user_tokens (user_id, plan, balance, used, is_admin)
+  values (new.id, 'starter', 0, 0, false);
+  return new;
+end;
+$$;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute procedure public.handle_new_user();
+
 -- Adjusts balance by a positive or negative delta.
 create or replace function adjust_balance(p_user_id uuid, p_delta integer)
 returns void
