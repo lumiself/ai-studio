@@ -1,7 +1,7 @@
 import type { Pipeline } from '@/lib/types';
 
 // Default model can be overridden via admin settings → DB key 'model_gfpgan'
-export const DEFAULT_MODEL = 'tencentarc/gfpgan:9283608cc6b7be6b65a8e44983db012355f829a539ad9f567c337d62464d05d';
+export const DEFAULT_MODEL = 'flux-kontext-apps/restore-image';
 
 const pipeline: Pipeline = {
   id: 'gfpgan',
@@ -9,9 +9,7 @@ const pipeline: Pipeline = {
     {
       model: DEFAULT_MODEL,
       buildInput: (ctx) => ({
-        img: ctx.inputUrl,
-        scale: ctx.scale ?? 2,
-        version: 'v1.4',
+        input_image: ctx.inputUrl,
       }),
       processOutput: async (output) => output as string,
     },
