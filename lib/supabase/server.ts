@@ -11,9 +11,10 @@ export async function createServerSupabase() {
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
-      setAll: (cookiesToSet) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setAll: (cookiesToSet: { name: string; value: string; options?: object }[]) => {
         cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
+          cookieStore.set(name, value, options as any)
         );
       },
     },
