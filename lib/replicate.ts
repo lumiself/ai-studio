@@ -35,6 +35,7 @@ export interface CreatePredictionParams {
 export async function createPrediction(params: CreatePredictionParams): Promise<string> {
   const client = await getClient();
 
+  console.log('[createPrediction] model:', params.model);
   const colonIdx = params.model.indexOf(':');
   const webhook = `${params.webhookUrl}?jobId=${params.jobId}`;
 
