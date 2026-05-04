@@ -140,7 +140,10 @@ export default function TemplatesPanel({
                   title={p.description}
                 >
                   <div className="aipe-preset-card__thumb-wrap">
-                    <span className="aipe-preset-card__thumb-placeholder">🖼</span>
+                    {p.thumbnail
+                      ? <img className="aipe-preset-card__thumb" src={p.thumbnail} alt={p.name} />
+                      : <span className="aipe-preset-card__thumb-placeholder">🖼</span>
+                    }
                   </div>
                   <span className="aipe-preset-card__name">{p.name}</span>
                 </button>
