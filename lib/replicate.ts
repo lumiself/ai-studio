@@ -35,15 +35,30 @@ export interface CreatePredictionParams {
 export async function createPrediction(params: CreatePredictionParams): Promise<string> {
   const client = await getClient();
 
-  const [ownerModel, version] = params.model.split(':');
-  if (!ownerModel || !version) throw new Error(`Invalid model format: ${params.model}`);
+  const colonIdx = params.model.indexOf(':');
+  const webhook = `${params.webhookUrl}?jobId=${params.jobId}`;
 
-  const prediction = await client.predictions.create({
-    version,
-    input: params.input,
-    webhook: `${params.webhookUrl}?jobId=${params.jobId}`,
-    webhook_events_filter: ['completed'],
-  });
+  let prediction;
+  if (colonIdx !== -1) {
+    // owner/name:version — pin to specific version
+    const version = params.model.slice(colonIdx + 1);
+    prediction = await client.predictions.create({
+      version,
+      input: params.input,
+      webhook,
+      webhook_events_filter: ['completed'],
+    });
+  } else {
+    // owner/name — use latest deployed version
+    const [owner, name] = params.model.split('/');
+    if (!owner || !name) throw new Error(`Invalid model format: ${params.model}`);
+    prediction = await client.predictions.create({
+      model: params.model,
+      input: params.input,
+      webhook,
+      webhook_events_filter: ['completed'],
+    });
+  }
 
   return prediction.id;
 }
