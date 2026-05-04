@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieMethodsServer } from '@supabase/ssr';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
             res.cookies.set(name, value, options)
           );
         },
-      },
+      } satisfies CookieMethodsServer,
     },
   );
 
