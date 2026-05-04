@@ -95,7 +95,7 @@ export default function TemplatesPanel({
                 <button
                   key={a.id}
                   className="aipe-template-card"
-                  aria-checked={selectedTemplateId === a.id}
+                  aria-pressed={selectedTemplateId === a.id}
                   onClick={() => onSelectTemplate(a.id)}
                   title={a.description}
                 >
@@ -134,7 +134,7 @@ export default function TemplatesPanel({
                 <button
                   key={p.id}
                   className="aipe-preset-card"
-                  aria-checked={selectedPresetId === p.id}
+                  aria-pressed={selectedPresetId === p.id}
                   data-category={p.category}
                   onClick={() => onSelectPreset(p.id)}
                   title={p.description}

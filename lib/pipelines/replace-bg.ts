@@ -28,7 +28,7 @@ const pipeline: Pipeline = {
       }),
       // output = background image URL; ctx.intermediateUrl = foreground PNG URL
       // The webhook handler calls composite() and stores the final result.
-      processOutput: async (_output, _ctx) => {
+      processOutput: async () => {
         // Compositing is performed by the webhook handler using lib/composite.ts.
         // This function is a no-op marker; the webhook reads the model and routes accordingly.
         throw new Error('replace_bg step 2 processOutput must be called via the webhook handler with composite support');

@@ -3,7 +3,6 @@
 
 const UPLOAD_URL = process.env.STORAGE_UPLOAD_URL!;
 const SECRET_TOKEN = process.env.STORAGE_SECRET_TOKEN!;
-const BASE_URL = process.env.STORAGE_BASE_URL!;
 
 export type StorageFolder = 'uploads' | 'results';
 

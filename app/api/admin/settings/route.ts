@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
 import { invalidateReplicateClient } from '@/lib/replicate';
 
-async function requireAdmin(req: NextRequest) {
+async function requireAdmin() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -13,8 +13,8 @@ async function requireAdmin(req: NextRequest) {
 }
 
 // GET — load all settings
-export async function GET(req: NextRequest) {
-  const admin = await requireAdmin(req);
+export async function GET() {
+  const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const db = createServiceSupabase();
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
 // POST — save one or more settings
 export async function POST(req: NextRequest) {
-  const admin = await requireAdmin(req);
+  const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { settings } = await req.json() as { settings: Record<string, string> };
