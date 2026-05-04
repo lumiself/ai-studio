@@ -1,7 +1,7 @@
 import type { Pipeline } from '@/lib/types';
 
 // Default model can be overridden via admin settings → DB key 'model_remove_bg'
-export const DEFAULT_MODEL = 'lucataco/remove-bg';
+export const DEFAULT_MODEL = 'bria/remove-background';
 
 const pipeline: Pipeline = {
   id: 'remove_bg',
