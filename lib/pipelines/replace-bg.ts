@@ -1,9 +1,9 @@
 import type { Pipeline } from '@/lib/types';
 
 // Step 1: remove background
-export const DEFAULT_MODEL_REMOVE = 'lucataco/remove-bg:95fcc2a26d3899cd6c2691c900465aaeff466285d65c14638e851f45be1cc22e';
+export const DEFAULT_MODEL_REMOVE = 'bria/remove-background';
 // Step 2: generate new background from prompt (SDXL)
-export const DEFAULT_MODEL_BG_GEN = 'stability-ai/sdxl:39ed52f2319f9f74e8a4958ea14413aa4a52ea6e4623c023c9ecf7427440d6e8';
+export const DEFAULT_MODEL_BG_GEN = 'stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e0d392b4f4397dbd4a1eedfb0';
 
 // Two Replicate steps; compositing happens inside step 2's processOutput (in the webhook handler
 // via lib/composite.ts), using the foreground stored in job.intermediate_url and the

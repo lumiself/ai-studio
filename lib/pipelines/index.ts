@@ -3,11 +3,12 @@ import type { Pipeline } from '@/lib/types';
 // ── Register pipelines here ───────────────────────────────────────────────
 // To add a new pipeline: create its file in this folder, then add one import
 // line and one entry in the PIPELINES array below. That's it.
-import removeBg       from './remove-bg';
-import replaceBg      from './replace-bg';
-import upscale        from './upscale';
-import gfpgan         from './gfpgan';
+import removeBg        from './remove-bg';
+import replaceBg       from './replace-bg';
+import upscale         from './upscale';
+import gfpgan          from './gfpgan';
 import portraitRetouch from './portrait-retouch';
+import gptBg           from './gpt-bg';
 
 export const PIPELINES: Pipeline[] = [
   removeBg,
@@ -15,6 +16,7 @@ export const PIPELINES: Pipeline[] = [
   upscale,
   gfpgan,
   portraitRetouch,
+  gptBg,
 ];
 
 export function getPipeline(id: string): Pipeline | undefined {

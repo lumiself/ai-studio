@@ -13,9 +13,8 @@ interface ReplicateWebhookBody {
   error?: string;
 }
 
-const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL ?? process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : 'http://localhost:3000';
+const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL
+  ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
