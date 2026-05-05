@@ -11,6 +11,8 @@ import cityBackground   from './city-background';
 import customBackground from './custom-background';
 import faceRestoration  from './face-restoration';
 import portraitRetouch  from './portrait-retouch';
+import colourEnhance    from './colour-enhance';
+import skinRefine       from './skin-refine';
 import upscale2x        from './upscale-2x';
 import upscale4x        from './upscale-4x';
 import hdEnhance        from './hd-enhance';
@@ -24,6 +26,8 @@ export const ACTIONS: Action[] = [
   customBackground,
   faceRestoration,
   portraitRetouch,
+  colourEnhance,
+  skinRefine,
   upscale2x,
   upscale4x,
   hdEnhance,

@@ -9,6 +9,7 @@ import upscale         from './upscale';
 import gfpgan          from './gfpgan';
 import portraitRetouch from './portrait-retouch';
 import gptBg           from './gpt-bg';
+import gptRetouch      from './gpt-retouch';
 
 export const PIPELINES: Pipeline[] = [
   removeBg,
@@ -17,6 +18,7 @@ export const PIPELINES: Pipeline[] = [
   gfpgan,
   portraitRetouch,
   gptBg,
+  gptRetouch,
 ];
 
 export function getPipeline(id: string): Pipeline | undefined {
