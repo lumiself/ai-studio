@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { createServerSupabase } from '@/lib/supabase/server';
-import { uploadToStorage, uploadFilename } from '@/lib/storage';
+import { uploadToStorage, uploadFilename, thumbFilename } from '@/lib/storage';
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -25,13 +26,22 @@ export async function POST(req: NextRequest) {
   const filename = uploadFilename(jobId, file.name);
   const buffer = Buffer.from(await file.arrayBuffer());
 
+  const thumbBuffer = await sharp(buffer)
+    .resize(400, 400, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 75 })
+    .toBuffer();
+
   let inputUrl: string;
+  let thumbUrl: string;
   try {
-    inputUrl = await uploadToStorage(buffer, filename, 'uploads');
+    [inputUrl, thumbUrl] = await Promise.all([
+      uploadToStorage(buffer, filename, 'uploads'),
+      uploadToStorage(thumbBuffer, thumbFilename(jobId), 'uploads'),
+    ]);
   } catch (err) {
     console.error('Storage upload failed:', err);
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
   }
 
-  return NextResponse.json({ jobId, inputUrl });
+  return NextResponse.json({ jobId, inputUrl, thumbUrl });
 }
