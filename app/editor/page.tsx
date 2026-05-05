@@ -254,8 +254,6 @@ export default function EditorPage() {
           }
         }
 
-        const stillProcessing = state.images.filter(i => i.status === 'processing').length;
-        if (stillProcessing === 0) dispatch({ type: 'SET_PROCESSING', value: false });
       } catch {
         // Polling errors are non-fatal; retry next tick.
       }
@@ -263,6 +261,14 @@ export default function EditorPage() {
 
     return () => clearInterval(interval);
   }, [state.images]);
+
+  // The polling interval can't reliably detect when the last job finishes because
+  // it's cleaned up before the check runs. Watch reactively instead.
+  useEffect(() => {
+    if (state.processing && !state.images.some(i => i.status === 'processing')) {
+      dispatch({ type: 'SET_PROCESSING', value: false });
+    }
+  }, [state.images, state.processing]);
 
   const handleUploadToServer = useCallback(async (files: File[]) => {
     setUploading(true);
