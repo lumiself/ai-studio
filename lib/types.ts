@@ -61,7 +61,8 @@ export interface Action {
 
 export interface QueuedImage {
   id: string;
-  file: File;
+  file?: File;
+  inputUrl?: string;
   previewUrl: string;
   name: string;
   status: ImageStatus;
