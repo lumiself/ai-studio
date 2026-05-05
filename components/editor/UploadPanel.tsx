@@ -118,7 +118,7 @@ export default function UploadPanel({
                 <div key={img.id} className="aipe-library-item" title={img.name}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={img.url}
+                    src={img.thumbUrl ?? img.url}
                     alt={img.name}
                     className="aipe-library-item__thumb"
                     onClick={() => onAddFromLibrary(img)}

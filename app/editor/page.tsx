@@ -278,8 +278,8 @@ export default function EditorPage() {
         formData.append('file', file);
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         if (!res.ok) return;
-        const { jobId, inputUrl } = await res.json() as { jobId: string; inputUrl: string };
-        dispatch({ type: 'ADD_TO_LIBRARY', image: { id: jobId, url: inputUrl, name: file.name } });
+        const { jobId, inputUrl, thumbUrl } = await res.json() as { jobId: string; inputUrl: string; thumbUrl: string };
+        dispatch({ type: 'ADD_TO_LIBRARY', image: { id: jobId, url: inputUrl, thumbUrl, name: file.name } });
       }));
     } finally {
       setUploading(false);

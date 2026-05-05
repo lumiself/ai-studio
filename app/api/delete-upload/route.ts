@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase, createServiceSupabase } from '@/lib/supabase/server';
-import { deleteFromStorage } from '@/lib/storage';
+import { deleteFromStorage, deriveThumbUrl } from '@/lib/storage';
 
 export async function DELETE(req: NextRequest) {
   const supabase = await createServerSupabase();
@@ -23,7 +23,10 @@ export async function DELETE(req: NextRequest) {
 
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  await deleteFromStorage(inputUrl);
+  await Promise.allSettled([
+    deleteFromStorage(inputUrl),
+    deleteFromStorage(deriveThumbUrl(inputUrl)),
+  ]);
 
   // Remove all jobs that used this input so they don't appear in history
   await db.from('jobs').delete().eq('user_id', user.id).eq('input_url', inputUrl);

@@ -84,6 +84,7 @@ export interface ResultItem {
 export interface LibraryImage {
   id: string;
   url: string;
+  thumbUrl?: string;
   name: string;
 }
 

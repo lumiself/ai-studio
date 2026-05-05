@@ -77,3 +77,18 @@ export function uploadFilename(jobId: string, originalName: string): string {
   const ext = originalName.split('.').pop() ?? 'jpg';
   return `${jobId}.${ext}`;
 }
+
+export function thumbFilename(jobId: string): string {
+  return `${jobId}_thumb.jpg`;
+}
+
+// Derives the thumbnail URL from an original upload URL.
+// e.g. .../uploads/abc123.png  →  .../uploads/abc123_thumb.jpg
+export function deriveThumbUrl(inputUrl: string): string {
+  const parsed = new URL(inputUrl);
+  const parts = parsed.pathname.split('/');
+  const filename = decodeURIComponent(parts[parts.length - 1]);
+  parts[parts.length - 1] = filename.replace(/\.[^.]+$/, '_thumb.jpg');
+  parsed.pathname = parts.join('/');
+  return parsed.toString();
+}
