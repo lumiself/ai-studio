@@ -85,7 +85,7 @@ export default function ResultsPanel({ results, processingIds, onToggleResult, o
                         <span className="aipe-result-card__name">{r.imageName}</span>
                         <button className="aipe-result-card__btn" onClick={() => { setLightbox({ inputUrl: r.inputUrl, outputUrl: r.outputUrl, name: r.imageName }); setShowBefore(false); }}>⤢ Compare</button>
                         <button className="aipe-result-card__btn" onClick={e => { e.stopPropagation(); onToggleResult(r.id); }}>{r.selected ? '✓ Selected' : '+ Select'}</button>
-                        <a href={r.outputUrl} download className="aipe-result-card__btn">↓ Save</a>
+                        <a href={`/api/download?url=${encodeURIComponent(r.outputUrl)}&filename=${encodeURIComponent(r.imageName)}`} className="aipe-result-card__btn">↓ Save</a>
                       </div>
                     </>
                   )}
