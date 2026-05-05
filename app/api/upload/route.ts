@@ -32,15 +32,18 @@ export async function POST(req: NextRequest) {
     .toBuffer();
 
   let inputUrl: string;
-  let thumbUrl: string;
   try {
-    [inputUrl, thumbUrl] = await Promise.all([
-      uploadToStorage(buffer, filename, 'uploads'),
-      uploadToStorage(thumbBuffer, thumbFilename(jobId), 'uploads'),
-    ]);
+    inputUrl = await uploadToStorage(buffer, filename, 'uploads');
   } catch (err) {
     console.error('Storage upload failed:', err);
     return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+  }
+
+  let thumbUrl: string | undefined;
+  try {
+    thumbUrl = await uploadToStorage(thumbBuffer, thumbFilename(jobId), 'uploads');
+  } catch (err) {
+    console.error('Thumbnail upload failed (non-fatal):', err);
   }
 
   return NextResponse.json({ jobId, inputUrl, thumbUrl });
