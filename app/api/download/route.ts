@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabase } from '@/lib/supabase/server';
 import JSZip from 'jszip';
 
+// Single-file proxy download — browser follows <a href="/api/download?url=...">
+export async function GET(req: NextRequest) {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const url = req.nextUrl.searchParams.get('url');
+  const filename = req.nextUrl.searchParams.get('filename') ?? 'result.png';
+  if (!url) return NextResponse.json({ error: 'Missing url' }, { status: 400 });
+
+  const upstream = await fetch(url);
+  if (!upstream.ok) return NextResponse.json({ error: 'Failed to fetch image' }, { status: 502 });
+
+  const buffer = await upstream.arrayBuffer();
+  const contentType = upstream.headers.get('content-type') ?? 'image/png';
+
+  return new NextResponse(buffer, {
+    headers: {
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': String(buffer.byteLength),
+    },
+  });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
