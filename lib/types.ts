@@ -81,6 +81,12 @@ export interface ResultItem {
   selected: boolean;
 }
 
+export interface LibraryImage {
+  id: string;
+  url: string;
+  name: string;
+}
+
 export interface BatchStats {
   total: number;
   done: number;

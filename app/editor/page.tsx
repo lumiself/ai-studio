@@ -3,7 +3,7 @@ import { useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import UploadPanel from '@/components/editor/UploadPanel';
 import TemplatesPanel from '@/components/editor/TemplatesPanel';
 import ResultsPanel from '@/components/editor/ResultsPanel';
-import type { QueuedImage, ResultItem, EditorMode, BatchStats } from '@/lib/types';
+import type { QueuedImage, ResultItem, EditorMode, BatchStats, LibraryImage } from '@/lib/types';
 import { createBrowserSupabase } from '@/lib/supabase/client';
 import '@/styles/editor.css';
 
@@ -11,6 +11,7 @@ import '@/styles/editor.css';
 interface EditorState {
   images: QueuedImage[];
   results: ResultItem[];
+  libraryImages: LibraryImage[];
   mode: EditorMode;
   selectedTemplateId: string | null;
   selectedPresetId: string | null;
@@ -36,7 +37,9 @@ type Action =
   | { type: 'UPDATE_IMAGE_STATUS'; id: string; status: QueuedImage['status']; outputUrl?: string; error?: string; jobId?: string }
   | { type: 'ADD_RESULT'; result: ResultItem }
   | { type: 'LOAD_HISTORY'; results: ResultItem[] }
-  | { type: 'LOAD_UPLOAD_HISTORY'; images: QueuedImage[] }
+  | { type: 'LOAD_LIBRARY'; images: LibraryImage[] }
+  | { type: 'REMOVE_LIBRARY_IMAGE'; id: string }
+  | { type: 'ADD_IMAGE_FROM_URL'; url: string; name: string }
   | { type: 'TOGGLE_RESULT'; id: string }
   | { type: 'DELETE_RESULT'; id: string }
   | { type: 'CLEAR_RESULTS' }
@@ -90,10 +93,20 @@ function reducer(state: EditorState, action: Action): EditorState {
       return { ...state, results: [...state.results, action.result] };
     case 'LOAD_HISTORY':
       return { ...state, results: [...action.results, ...state.results] };
-    case 'LOAD_UPLOAD_HISTORY': {
-      const existingUrls = new Set(state.images.map(i => i.inputUrl).filter(Boolean));
-      const fresh = action.images.filter(i => !existingUrls.has(i.inputUrl));
-      return { ...state, images: [...state.images, ...fresh] };
+    case 'LOAD_LIBRARY':
+      return { ...state, libraryImages: action.images };
+    case 'REMOVE_LIBRARY_IMAGE':
+      return { ...state, libraryImages: state.libraryImages.filter(i => i.id !== action.id) };
+    case 'ADD_IMAGE_FROM_URL': {
+      const newImage: QueuedImage = {
+        id: crypto.randomUUID(),
+        inputUrl: action.url,
+        previewUrl: action.url,
+        name: action.name,
+        status: 'queued',
+        selected: true,
+      };
+      return { ...state, images: [...state.images, newImage] };
     }
     case 'TOGGLE_RESULT':
       return { ...state, results: state.results.map(r => r.id === action.id ? { ...r, selected: !r.selected } : r) };
@@ -131,6 +144,7 @@ function reducer(state: EditorState, action: Action): EditorState {
 const INITIAL_STATE: EditorState = {
   images: [],
   results: [],
+  libraryImages: [],
   mode: 'actions',
   selectedTemplateId: null,
   selectedPresetId: null,
@@ -147,8 +161,6 @@ export default function EditorPage() {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
   const abortRef = useRef(false);
-  const imagesRef = useRef(state.images);
-  useEffect(() => { imagesRef.current = state.images; }, [state.images]);
 
   // ── Load token balance on mount ────────────────────────────────────────
   useEffect(() => {
@@ -164,7 +176,7 @@ export default function EditorPage() {
     });
   }, []);
 
-  // ── Load previous results and uploads on mount ────────────────────────
+  // ── Load previous results and library on mount ────────────────────────
   useEffect(() => {
     fetch('/api/jobs?history=true')
       .then(r => r.ok ? r.json() : null)
@@ -181,23 +193,20 @@ export default function EditorPage() {
         }));
         dispatch({ type: 'LOAD_HISTORY', results });
 
-        // Unique input URLs → upload panel (so user can re-process old images)
+        // Unique input URLs → library panel
         const seen = new Set<string>();
-        const uploadImages: QueuedImage[] = [];
+        const libraryImages: LibraryImage[] = [];
         for (const j of data.jobs) {
           if (!seen.has(j.input_url)) {
             seen.add(j.input_url);
-            uploadImages.push({
+            libraryImages.push({
               id: crypto.randomUUID(),
-              inputUrl: j.input_url,
-              previewUrl: j.input_url,
+              url: j.input_url,
               name: j.input_url.split('/').pop() ?? 'image',
-              status: 'queued',
-              selected: false,
             });
           }
         }
-        if (uploadImages.length) dispatch({ type: 'LOAD_UPLOAD_HISTORY', images: uploadImages });
+        if (libraryImages.length) dispatch({ type: 'LOAD_LIBRARY', images: libraryImages });
       })
       .catch(() => {});
   }, []);
@@ -253,20 +262,21 @@ export default function EditorPage() {
 
   const handleAdd = useCallback((files: File[]) => dispatch({ type: 'ADD_IMAGES', files }), []);
   const handleToggle = useCallback((id: string) => dispatch({ type: 'TOGGLE_IMAGE', id }), []);
-  const handleRemove = useCallback(async (id: string) => {
-    const img = imagesRef.current.find(i => i.id === id);
-    if (img?.inputUrl && !img.file) {
-      try {
-        await fetch('/api/delete-upload', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputUrl: img.inputUrl }),
-        });
-      } catch {
-        // Non-fatal — remove from UI regardless
-      }
+  const handleRemove = useCallback((id: string) => dispatch({ type: 'REMOVE_IMAGE', id }), []);
+  const handleAddFromLibrary = useCallback((img: LibraryImage) => {
+    dispatch({ type: 'ADD_IMAGE_FROM_URL', url: img.url, name: img.name });
+  }, []);
+  const handleDeleteFromLibrary = useCallback(async (img: LibraryImage) => {
+    try {
+      await fetch('/api/delete-upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputUrl: img.url }),
+      });
+    } catch {
+      // Non-fatal — remove from UI regardless
     }
-    dispatch({ type: 'REMOVE_IMAGE', id });
+    dispatch({ type: 'REMOVE_LIBRARY_IMAGE', id: img.id });
   }, []);
   const handleSelectAll = useCallback(() => dispatch({ type: 'SELECT_ALL' }), []);
   const handleDeselectAll = useCallback(() => dispatch({ type: 'DESELECT_ALL' }), []);
@@ -425,11 +435,14 @@ export default function EditorPage() {
       <div className="aipe-layout">
         <UploadPanel
           images={state.images}
+          libraryImages={state.libraryImages}
           onAdd={handleAdd}
           onToggle={handleToggle}
           onRemove={handleRemove}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
+          onAddFromLibrary={handleAddFromLibrary}
+          onDeleteFromLibrary={handleDeleteFromLibrary}
           className={mobilePanel === 'upload' ? 'aipe-panel--mobile-active' : ''}
         />
         <TemplatesPanel

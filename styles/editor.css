@@ -136,6 +136,86 @@
 }
 
 
+/* ── Panel tabs ────────────────────────────────────────────────────────── */
+.aipe-panel-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+}
+.aipe-panel-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--aipe-border);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--aipe-text-muted);
+  cursor: pointer;
+  transition: all .15s;
+}
+.aipe-panel-tab:hover { border-color: var(--aipe-accent); color: var(--aipe-accent); }
+.aipe-panel-tab--active { background: var(--aipe-accent); border-color: var(--aipe-accent); color: #fff; }
+.aipe-panel-tab--active:hover { color: #fff; }
+
+/* ── Library grid ──────────────────────────────────────────────────────── */
+.aipe-library-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 4px 0;
+}
+.aipe-library-item {
+  position: relative;
+  border-radius: var(--aipe-radius-sm);
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: var(--aipe-bg);
+  cursor: pointer;
+}
+.aipe-library-item__thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .2s;
+}
+.aipe-library-item:hover .aipe-library-item__thumb { transform: scale(1.04); }
+.aipe-library-item__delete,
+.aipe-library-item__add {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.aipe-library-item:hover .aipe-library-item__delete,
+.aipe-library-item:hover .aipe-library-item__add { opacity: 1; }
+.aipe-library-item__delete { top: 5px; right: 5px; background: rgba(239,68,68,.9); color: #fff; }
+.aipe-library-item__add    { bottom: 5px; right: 5px; background: rgba(108,99,255,.9); color: #fff; }
+.aipe-empty-hint {
+  color: var(--aipe-text-muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+.aipe-drop-zone--compact {
+  padding: 10px 16px;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.aipe-drop-zone--compact .aipe-drop-zone__label { font-size: 13px; margin: 0; }
+.aipe-drop-zone--compact .aipe-drop-zone__hint { display: none; }
+
 /* ── Panels ────────────────────────────────────────────────────────────── */
 .aipe-panel {
   background: var(--aipe-surface);
