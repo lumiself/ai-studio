@@ -147,6 +147,8 @@ export default function EditorPage() {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
   const abortRef = useRef(false);
+  const imagesRef = useRef(state.images);
+  useEffect(() => { imagesRef.current = state.images; }, [state.images]);
 
   // ── Load token balance on mount ────────────────────────────────────────
   useEffect(() => {
@@ -251,7 +253,21 @@ export default function EditorPage() {
 
   const handleAdd = useCallback((files: File[]) => dispatch({ type: 'ADD_IMAGES', files }), []);
   const handleToggle = useCallback((id: string) => dispatch({ type: 'TOGGLE_IMAGE', id }), []);
-  const handleRemove = useCallback((id: string) => dispatch({ type: 'REMOVE_IMAGE', id }), []);
+  const handleRemove = useCallback(async (id: string) => {
+    const img = imagesRef.current.find(i => i.id === id);
+    if (img?.inputUrl && !img.file) {
+      try {
+        await fetch('/api/delete-upload', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ inputUrl: img.inputUrl }),
+        });
+      } catch {
+        // Non-fatal — remove from UI regardless
+      }
+    }
+    dispatch({ type: 'REMOVE_IMAGE', id });
+  }, []);
   const handleSelectAll = useCallback(() => dispatch({ type: 'SELECT_ALL' }), []);
   const handleDeselectAll = useCallback(() => dispatch({ type: 'DESELECT_ALL' }), []);
 
