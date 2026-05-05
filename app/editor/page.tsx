@@ -36,6 +36,7 @@ type Action =
   | { type: 'UPDATE_IMAGE_STATUS'; id: string; status: QueuedImage['status']; outputUrl?: string; error?: string; jobId?: string }
   | { type: 'ADD_RESULT'; result: ResultItem }
   | { type: 'LOAD_HISTORY'; results: ResultItem[] }
+  | { type: 'LOAD_UPLOAD_HISTORY'; images: QueuedImage[] }
   | { type: 'TOGGLE_RESULT'; id: string }
   | { type: 'DELETE_RESULT'; id: string }
   | { type: 'CLEAR_RESULTS' }
@@ -89,6 +90,11 @@ function reducer(state: EditorState, action: Action): EditorState {
       return { ...state, results: [...state.results, action.result] };
     case 'LOAD_HISTORY':
       return { ...state, results: [...action.results, ...state.results] };
+    case 'LOAD_UPLOAD_HISTORY': {
+      const existingUrls = new Set(state.images.map(i => i.inputUrl).filter(Boolean));
+      const fresh = action.images.filter(i => !existingUrls.has(i.inputUrl));
+      return { ...state, images: [...state.images, ...fresh] };
+    }
     case 'TOGGLE_RESULT':
       return { ...state, results: state.results.map(r => r.id === action.id ? { ...r, selected: !r.selected } : r) };
     case 'DELETE_RESULT': {
@@ -156,12 +162,13 @@ export default function EditorPage() {
     });
   }, []);
 
-  // ── Load previous results on mount ────────────────────────────────────
+  // ── Load previous results and uploads on mount ────────────────────────
   useEffect(() => {
     fetch('/api/jobs?history=true')
       .then(r => r.ok ? r.json() : null)
       .then((data: { jobs: Array<{ id: string; input_url: string; output_url: string; action_id: string }> } | null) => {
         if (!data?.jobs?.length) return;
+
         const results: ResultItem[] = data.jobs.map(j => ({
           id: j.id,
           imageId: j.id,
@@ -171,6 +178,24 @@ export default function EditorPage() {
           selected: false,
         }));
         dispatch({ type: 'LOAD_HISTORY', results });
+
+        // Unique input URLs → upload panel (so user can re-process old images)
+        const seen = new Set<string>();
+        const uploadImages: QueuedImage[] = [];
+        for (const j of data.jobs) {
+          if (!seen.has(j.input_url)) {
+            seen.add(j.input_url);
+            uploadImages.push({
+              id: crypto.randomUUID(),
+              inputUrl: j.input_url,
+              previewUrl: j.input_url,
+              name: j.input_url.split('/').pop() ?? 'image',
+              status: 'queued',
+              selected: false,
+            });
+          }
+        }
+        if (uploadImages.length) dispatch({ type: 'LOAD_UPLOAD_HISTORY', images: uploadImages });
       })
       .catch(() => {});
   }, []);
@@ -260,12 +285,21 @@ export default function EditorPage() {
       setProcessingIds(prev => new Set([...prev, img.id]));
 
       try {
-        // Step 1: upload original image to shared hosting.
-        const uploadForm = new FormData();
-        uploadForm.append('file', img.file);
-        const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
-        if (!uploadRes.ok) throw new Error('Upload failed');
-        const { jobId, inputUrl } = await uploadRes.json() as { jobId: string; inputUrl: string };
+        let jobId: string;
+        let inputUrl: string;
+
+        if (img.inputUrl) {
+          // History image — already on storage, skip upload.
+          jobId = crypto.randomUUID();
+          inputUrl = img.inputUrl;
+        } else {
+          // New file — upload to shared hosting first.
+          const uploadForm = new FormData();
+          uploadForm.append('file', img.file!);
+          const uploadRes = await fetch('/api/upload', { method: 'POST', body: uploadForm });
+          if (!uploadRes.ok) throw new Error('Upload failed');
+          ({ jobId, inputUrl } = await uploadRes.json() as { jobId: string; inputUrl: string });
+        }
 
         // Step 2: dispatch processing job to Replicate via /api/process.
         const processRes = await fetch('/api/process', {
