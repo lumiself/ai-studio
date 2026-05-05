@@ -44,6 +44,30 @@ export async function downloadAndStore(
   return uploadToStorage(buffer, filename, folder);
 }
 
+// Deletes a file from shared hosting by its public URL.
+export async function deleteFromStorage(url: string): Promise<void> {
+  const parsed = new URL(url);
+  const parts = parsed.pathname.split('/').filter(Boolean);
+  const filename = decodeURIComponent(parts[parts.length - 1]);
+  const folder = parts[parts.length - 2] as StorageFolder;
+
+  const formData = new FormData();
+  formData.append('action', 'delete');
+  formData.append('folder', folder);
+  formData.append('filename', filename);
+
+  const res = await fetch(UPLOAD_URL, {
+    method: 'POST',
+    headers: { 'X-Secret': SECRET_TOKEN },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Storage delete failed (${res.status}): ${text}`);
+  }
+}
+
 // Builds a deterministic filename for a job output.
 export function resultFilename(jobId: string, ext = 'png'): string {
   return `${jobId}.${ext}`;

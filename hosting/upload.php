@@ -39,6 +39,34 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+// ── Delete action ─────────────────────────────────────────────────────────
+if (($_POST['action'] ?? '') === 'delete') {
+    $folder   = $_POST['folder']   ?? '';
+    $filename = $_POST['filename'] ?? '';
+
+    if (!in_array($folder, ['uploads', 'results'], true)) {
+        http_response_code(400); echo json_encode(['error' => 'Invalid folder']); exit;
+    }
+
+    $filename = preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $filename);
+    if (!$filename || strlen($filename) > 200) {
+        http_response_code(400); echo json_encode(['error' => 'Invalid filename']); exit;
+    }
+
+    $path = $base_dir . '/' . $folder . '/' . $filename;
+    if (!file_exists($path)) {
+        http_response_code(404); echo json_encode(['error' => 'File not found']); exit;
+    }
+
+    if (!unlink($path)) {
+        http_response_code(500); echo json_encode(['error' => 'Failed to delete file']); exit;
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
 $folder   = $_POST['folder']   ?? '';
 $filename = $_POST['filename'] ?? '';
 $data     = $_POST['data']     ?? '';
