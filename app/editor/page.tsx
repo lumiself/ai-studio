@@ -38,6 +38,7 @@ type Action =
   | { type: 'ADD_RESULT'; result: ResultItem }
   | { type: 'LOAD_HISTORY'; results: ResultItem[] }
   | { type: 'LOAD_LIBRARY'; images: LibraryImage[] }
+  | { type: 'ADD_TO_LIBRARY'; image: LibraryImage }
   | { type: 'REMOVE_LIBRARY_IMAGE'; id: string }
   | { type: 'ADD_IMAGE_FROM_URL'; url: string; name: string }
   | { type: 'TOGGLE_RESULT'; id: string }
@@ -95,6 +96,8 @@ function reducer(state: EditorState, action: Action): EditorState {
       return { ...state, results: [...action.results, ...state.results] };
     case 'LOAD_LIBRARY':
       return { ...state, libraryImages: action.images };
+    case 'ADD_TO_LIBRARY':
+      return { ...state, libraryImages: [action.image, ...state.libraryImages] };
     case 'REMOVE_LIBRARY_IMAGE':
       return { ...state, libraryImages: state.libraryImages.filter(i => i.id !== action.id) };
     case 'ADD_IMAGE_FROM_URL': {
@@ -160,6 +163,7 @@ export default function EditorPage() {
   const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
+  const [uploading, setUploading] = useState(false);
   const abortRef = useRef(false);
 
   // ── Load token balance on mount ────────────────────────────────────────
@@ -260,7 +264,21 @@ export default function EditorPage() {
     return () => clearInterval(interval);
   }, [state.images]);
 
-  const handleAdd = useCallback((files: File[]) => dispatch({ type: 'ADD_IMAGES', files }), []);
+  const handleUploadToServer = useCallback(async (files: File[]) => {
+    setUploading(true);
+    try {
+      await Promise.all(files.map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        if (!res.ok) return;
+        const { jobId, inputUrl } = await res.json() as { jobId: string; inputUrl: string };
+        dispatch({ type: 'ADD_TO_LIBRARY', image: { id: jobId, url: inputUrl, name: file.name } });
+      }));
+    } finally {
+      setUploading(false);
+    }
+  }, []);
   const handleToggle = useCallback((id: string) => dispatch({ type: 'TOGGLE_IMAGE', id }), []);
   const handleRemove = useCallback((id: string) => dispatch({ type: 'REMOVE_IMAGE', id }), []);
   const handleAddFromLibrary = useCallback((img: LibraryImage) => {
@@ -436,13 +454,14 @@ export default function EditorPage() {
         <UploadPanel
           images={state.images}
           libraryImages={state.libraryImages}
-          onAdd={handleAdd}
+          onUploadToServer={handleUploadToServer}
           onToggle={handleToggle}
           onRemove={handleRemove}
           onSelectAll={handleSelectAll}
           onDeselectAll={handleDeselectAll}
           onAddFromLibrary={handleAddFromLibrary}
           onDeleteFromLibrary={handleDeleteFromLibrary}
+          uploading={uploading}
           className={mobilePanel === 'upload' ? 'aipe-panel--mobile-active' : ''}
         />
         <TemplatesPanel
