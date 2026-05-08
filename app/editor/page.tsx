@@ -360,6 +360,7 @@ export default function EditorPage() {
             inputUrl,
             actionId,
             bgPrompt: state.customPrompt || undefined,
+            presetInputValues: Object.keys(state.presetInputValues).length > 0 ? state.presetInputValues : undefined,
           }),
         });
 

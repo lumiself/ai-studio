@@ -4,6 +4,7 @@ import { deductTokens, getBalance } from '@/lib/tokens';
 import { createPrediction, getModelOverrides } from '@/lib/replicate';
 import { getPipeline, resolveModel } from '@/lib/pipelines';
 import { getAction } from '@/lib/actions';
+import { getPreset } from '@/lib/presets';
 
 const TOKEN_COST = 1; // tokens per image processed
 const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL
@@ -19,17 +20,21 @@ export async function POST(req: NextRequest) {
     inputUrl: string;
     actionId: string;
     bgPrompt?: string;
+    presetInputValues?: Record<string, string>;
   };
 
-  const { jobId, inputUrl, actionId, bgPrompt } = body;
+  const { jobId, inputUrl, actionId, bgPrompt, presetInputValues } = body;
   if (!jobId || !inputUrl || !actionId) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
+  // Resolve to an action or a preset.
   const action = getAction(actionId);
-  if (!action) return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+  const preset = action ? null : getPreset(actionId);
+  if (!action && !preset) return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 
-  const pipeline = getPipeline(action.pipeline);
+  const pipelineId = action ? action.pipeline : preset!.pipeline;
+  const pipeline = getPipeline(pipelineId);
   if (!pipeline) return NextResponse.json({ error: 'Unknown pipeline' }, { status: 400 });
 
   // Check and deduct tokens before touching Replicate.
@@ -46,12 +51,22 @@ export async function POST(req: NextRequest) {
   const model = resolveModel(pipeline, 0, overrides);
   if (!model) return NextResponse.json({ error: 'Pipeline model not configured' }, { status: 500 });
 
+  // Resolve the bg_prompt — substitute {key} placeholders for presets.
+  let resolvedBgPrompt: string | undefined;
+  if (preset) {
+    resolvedBgPrompt = preset.bg_prompt.replace(/\{(\w+)\}/g, (_, key) =>
+      presetInputValues?.[key] ?? ''
+    );
+  } else {
+    resolvedBgPrompt = bgPrompt ?? action!.bg_prompt;
+  }
+
   // Build step 0 input context.
   const ctx = {
     inputUrl,
-    bgPrompt: bgPrompt ?? action.bg_prompt,
-    scale: action.scale,
-    faceEnhance: action.face_enhance,
+    bgPrompt: resolvedBgPrompt,
+    scale: action?.scale,
+    faceEnhance: action?.face_enhance,
   };
 
   const stepFn = pipeline.steps[0]?.buildInput;
@@ -79,9 +94,9 @@ export async function POST(req: NextRequest) {
     step: 0,
     prediction_id: predictionId,
     input_url: inputUrl,
-    bg_prompt: bgPrompt ?? action.bg_prompt ?? null,
-    scale: action.scale ?? null,
-    face_enhance: action.face_enhance ?? null,
+    bg_prompt: resolvedBgPrompt ?? null,
+    scale: action?.scale ?? null,
+    face_enhance: action?.face_enhance ?? null,
   });
 
   if (dbError) {
