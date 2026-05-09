@@ -28,9 +28,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
-  // Resolve to an action or a preset.
+  // Resolve to an action or a preset (static first, then custom from DB).
   const action = getAction(actionId);
-  const preset = action ? null : getPreset(actionId);
+  let preset = action ? null : getPreset(actionId);
+  if (!action && !preset) {
+    const db = createServiceSupabase();
+    const { data: row } = await db.from('custom_presets').select('*').eq('id', actionId).single();
+    if (row) {
+      preset = {
+        id: row.id,
+        name: row.name,
+        description: row.description ?? '',
+        category: row.category,
+        thumbnail: row.thumbnail_url ?? undefined,
+        pipeline: row.pipeline ?? 'gpt_bg',
+        bg_prompt: row.bg_prompt ?? '',
+        inputs: row.inputs ?? [],
+      };
+    }
+  }
   if (!action && !preset) return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 
   const pipelineId = action ? action.pipeline : preset!.pipeline;

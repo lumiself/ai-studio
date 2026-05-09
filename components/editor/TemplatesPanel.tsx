@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { ACTIONS, ACTION_CATEGORIES } from '@/lib/actions';
-import { PRESETS, PRESET_CATEGORIES } from '@/lib/presets';
-import type { EditorMode, BatchStats } from '@/lib/types';
+import { PRESETS } from '@/lib/presets';
+import type { EditorMode, BatchStats, Preset } from '@/lib/types';
 
 interface Props {
   mode: EditorMode;
@@ -20,6 +20,7 @@ interface Props {
   batchStats: BatchStats;
   onProcessAll: () => void;
   onAbort: () => void;
+  customPresets?: Preset[];
   className?: string;
 }
 
@@ -31,15 +32,19 @@ export default function TemplatesPanel({
   customPrompt, onCustomPromptChange,
   selectedImageCount, processing,
   batchStats, onProcessAll, onAbort,
+  customPresets = [],
   className = '',
 }: Props) {
   const [actionCat, setActionCat] = useState('All');
   const [presetCat, setPresetCat] = useState('All');
 
-  const visibleActions = actionCat === 'All' ? ACTIONS : ACTIONS.filter(a => a.category === actionCat);
-  const visiblePresets = presetCat === 'All' ? PRESETS : PRESETS.filter(p => p.category === presetCat);
+  const allPresets = [...PRESETS, ...customPresets];
+  const allPresetCategories = [...new Set(allPresets.map(p => p.category))];
 
-  const selectedPreset  = PRESETS.find(p => p.id === selectedPresetId);
+  const visibleActions = actionCat === 'All' ? ACTIONS : ACTIONS.filter(a => a.category === actionCat);
+  const visiblePresets = presetCat === 'All' ? allPresets : allPresets.filter(p => p.category === presetCat);
+
+  const selectedPreset = allPresets.find(p => p.id === selectedPresetId);
   const selectedAction  = ACTIONS.find(a => a.id === selectedTemplateId);
   const showPrompt = mode === 'actions' && selectedAction?.has_prompt;
 
@@ -123,7 +128,7 @@ export default function TemplatesPanel({
         {mode === 'presets' && (
           <>
             <div className="aipe-category-tabs">
-              {['All', ...PRESET_CATEGORIES].map(cat => (
+              {['All', ...allPresetCategories].map(cat => (
                 <button key={cat} className={`aipe-tab${presetCat === cat ? ' aipe-tab--active' : ''}`} onClick={() => setPresetCat(cat)}>
                   {cat}
                 </button>

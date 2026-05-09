@@ -3,7 +3,7 @@ import { useReducer, useCallback, useState, useEffect, useRef } from 'react';
 import UploadPanel from '@/components/editor/UploadPanel';
 import TemplatesPanel from '@/components/editor/TemplatesPanel';
 import ResultsPanel from '@/components/editor/ResultsPanel';
-import type { QueuedImage, ResultItem, EditorMode, BatchStats, LibraryImage } from '@/lib/types';
+import type { QueuedImage, ResultItem, EditorMode, BatchStats, LibraryImage, Preset } from '@/lib/types';
 import { createBrowserSupabase } from '@/lib/supabase/client';
 import '@/styles/editor.css';
 
@@ -164,7 +164,28 @@ export default function EditorPage() {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
   const [uploading, setUploading] = useState(false);
+  const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   const abortRef = useRef(false);
+
+  // ── Load custom presets on mount ──────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/presets')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { presets: Array<{ id: string; name: string; description: string; category: string; thumbnail_url: string | null; pipeline: string; bg_prompt: string; inputs: Preset['inputs'] }> } | null) => {
+        if (!data?.presets?.length) return;
+        setCustomPresets(data.presets.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description ?? '',
+          category: p.category,
+          thumbnail: p.thumbnail_url ?? undefined,
+          pipeline: p.pipeline ?? 'gpt_bg',
+          bg_prompt: p.bg_prompt ?? '',
+          inputs: p.inputs ?? [],
+        })));
+      })
+      .catch(() => {});
+  }, []);
 
   // ── Load token balance on mount ────────────────────────────────────────
   useEffect(() => {
@@ -474,6 +495,7 @@ export default function EditorPage() {
         <TemplatesPanel
           mode={state.mode}
           onModeChange={m => dispatch({ type: 'SET_MODE', mode: m })}
+          customPresets={customPresets}
           selectedTemplateId={state.selectedTemplateId}
           selectedPresetId={state.selectedPresetId}
           onSelectTemplate={id => dispatch({ type: 'SET_TEMPLATE', id })}
