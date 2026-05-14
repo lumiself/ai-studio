@@ -57,14 +57,20 @@ export async function POST(req: NextRequest) {
   }
 
   const currentStep = job.step as number;
-  const isLastStep = currentStep === pipeline.steps.length - 1;
+  const HD_UPSCALE_MODEL = 'prunaai/p-image-upscale';
+  const pipelineEndsWithUpscale = pipeline.steps[pipeline.steps.length - 1]?.model === HD_UPSCALE_MODEL;
+  const needsHdStep = (job.high_res as boolean) && !pipelineEndsWithUpscale;
+  // A "virtual" step index one beyond the pipeline definition — the appended HD upscale.
+  const isVirtualHdStep = needsHdStep && currentStep === pipeline.steps.length;
+  const isLastPipelineStep = currentStep === pipeline.steps.length - 1;
+  const isFinalStep = isVirtualHdStep || (isLastPipelineStep && !needsHdStep);
 
   try {
-    if (isLastStep) {
+    if (isFinalStep) {
       // ── Final step: save result and mark job succeeded ─────────────────
       let outputUrl: string;
 
-      if (job.pipeline === 'replace_bg' && currentStep === 1) {
+      if (job.pipeline === 'replace_bg' && currentStep === 1 && !isVirtualHdStep) {
         // Step 1 output = background image URL; composite with foreground.
         const bgUrl = extractUrl(body.output);
         const fgUrl = job.intermediate_url as string;
@@ -81,6 +87,38 @@ export async function POST(req: NextRequest) {
       await db.from('jobs').update({
         status: 'succeeded',
         output_url: outputUrl,
+        updated_at: new Date().toISOString(),
+      }).eq('id', jobId);
+
+    } else if (isLastPipelineStep && needsHdStep) {
+      // ── Last pipeline step, but HD upscale still pending ──────────────
+      let intermediateUrl: string;
+
+      if (job.pipeline === 'replace_bg' && currentStep === 1) {
+        // Composite first, then upscale the composited image.
+        const bgUrl = extractUrl(body.output);
+        const fgUrl = job.intermediate_url as string;
+        if (!fgUrl) throw new Error('Missing intermediate_url for compositing');
+        const composited = await compositeImages(fgUrl, bgUrl);
+        intermediateUrl = await uploadToStorage(composited, `${jobId}_step${currentStep}.jpg`, 'uploads');
+      } else {
+        const rawUrl = extractUrl(body.output);
+        const ext = rawUrl.endsWith('.png') ? 'png' : 'jpg';
+        intermediateUrl = await downloadAndStore(rawUrl, `${jobId}_step${currentStep}.${ext}`, 'uploads');
+      }
+
+      const webhookUrl = `${WEBHOOK_BASE}/api/webhook/replicate`;
+      const newPredictionId = await createPrediction({
+        model: HD_UPSCALE_MODEL,
+        input: { image: intermediateUrl, upscale_mode: 'target', target: 8 },
+        webhookUrl,
+        jobId,
+      });
+
+      await db.from('jobs').update({
+        step: pipeline.steps.length, // virtual HD step index
+        prediction_id: newPredictionId,
+        intermediate_url: intermediateUrl,
         updated_at: new Date().toISOString(),
       }).eq('id', jobId);
 

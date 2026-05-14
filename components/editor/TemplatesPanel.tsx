@@ -15,6 +15,8 @@ interface Props {
   onPresetInputChange: (key: string, value: string) => void;
   customPrompt: string;
   onCustomPromptChange: (v: string) => void;
+  highRes: boolean;
+  onHighResChange: () => void;
   selectedImageCount: number;
   processing: boolean;
   batchStats: BatchStats;
@@ -30,6 +32,7 @@ export default function TemplatesPanel({
   onSelectTemplate, onSelectPreset,
   presetInputValues, onPresetInputChange,
   customPrompt, onCustomPromptChange,
+  highRes, onHighResChange,
   selectedImageCount, processing,
   batchStats, onProcessAll, onAbort,
   customPresets = [],
@@ -182,6 +185,18 @@ export default function TemplatesPanel({
       <div className="aipe-panel__footer">
         {!processing ? (
           <>
+            <label className="aipe-hd-toggle">
+              <input
+                type="checkbox"
+                checked={highRes}
+                onChange={onHighResChange}
+                className="aipe-hd-toggle__input"
+              />
+              <span className="aipe-hd-toggle__label">
+                HD Output (8 MP upscale)
+                <span className="aipe-hd-toggle__cost">+1 token</span>
+              </span>
+            </label>
             <button
               className="aipe-btn aipe-btn--primary"
               disabled={selectedImageCount === 0 || (!selectedTemplateId && !selectedPresetId)}

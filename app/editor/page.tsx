@@ -17,6 +17,7 @@ interface EditorState {
   selectedPresetId: string | null;
   presetInputValues: Record<string, string>;
   customPrompt: string;
+  highRes: boolean;
   processing: boolean;
   tokenBalance: number;
 }
@@ -32,6 +33,7 @@ type Action =
   | { type: 'SET_PRESET'; id: string }
   | { type: 'SET_PRESET_INPUT'; key: string; value: string }
   | { type: 'SET_CUSTOM_PROMPT'; value: string }
+  | { type: 'TOGGLE_HIGH_RES' }
   | { type: 'SET_PROCESSING'; value: boolean }
   | { type: 'SET_TOKEN_BALANCE'; value: number }
   | { type: 'UPDATE_IMAGE_STATUS'; id: string; status: QueuedImage['status']; outputUrl?: string; error?: string; jobId?: string }
@@ -77,6 +79,8 @@ function reducer(state: EditorState, action: Action): EditorState {
       return { ...state, presetInputValues: { ...state.presetInputValues, [action.key]: action.value } };
     case 'SET_CUSTOM_PROMPT':
       return { ...state, customPrompt: action.value };
+    case 'TOGGLE_HIGH_RES':
+      return { ...state, highRes: !state.highRes };
     case 'SET_PROCESSING':
       return { ...state, processing: action.value };
     case 'SET_TOKEN_BALANCE':
@@ -153,6 +157,7 @@ const INITIAL_STATE: EditorState = {
   selectedPresetId: null,
   presetInputValues: {},
   customPrompt: '',
+  highRes: false,
   processing: false,
   tokenBalance: 0,
 };
@@ -382,6 +387,7 @@ export default function EditorPage() {
             actionId,
             bgPrompt: state.customPrompt || undefined,
             presetInputValues: Object.keys(state.presetInputValues).length > 0 ? state.presetInputValues : undefined,
+            highRes: state.highRes || undefined,
           }),
         });
 
@@ -504,6 +510,8 @@ export default function EditorPage() {
           onPresetInputChange={(key, value) => dispatch({ type: 'SET_PRESET_INPUT', key, value })}
           customPrompt={state.customPrompt}
           onCustomPromptChange={v => dispatch({ type: 'SET_CUSTOM_PROMPT', value: v })}
+          highRes={state.highRes}
+          onHighResChange={() => dispatch({ type: 'TOGGLE_HIGH_RES' })}
           selectedImageCount={selectedCount}
           processing={state.processing}
           batchStats={batchStats}
