@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceSupabase } from '@/lib/supabase/server';
 import { verifyWebhookSignature, createPrediction, getModelOverrides } from '@/lib/replicate';
 import { getPipeline, resolveModel } from '@/lib/pipelines';
-import { downloadAndStore, resultFilename } from '@/lib/storage';
+import { downloadAndStore, extFromUrl, resultFilename } from '@/lib/storage';
 import { compositeImages } from '@/lib/composite';
 import { uploadToStorage } from '@/lib/storage';
 
@@ -80,8 +80,7 @@ export async function POST(req: NextRequest) {
         outputUrl = await uploadToStorage(composited, resultFilename(jobId, 'jpg'), 'results');
       } else {
         const rawUrl = extractUrl(body.output);
-        const ext = rawUrl.endsWith('.png') ? 'png' : 'jpg';
-        outputUrl = await downloadAndStore(rawUrl, resultFilename(jobId, ext), 'results');
+        outputUrl = await downloadAndStore(rawUrl, resultFilename(jobId, extFromUrl(rawUrl)), 'results');
       }
 
       await db.from('jobs').update({
@@ -103,8 +102,7 @@ export async function POST(req: NextRequest) {
         intermediateUrl = await uploadToStorage(composited, `${jobId}_step${currentStep}.jpg`, 'uploads');
       } else {
         const rawUrl = extractUrl(body.output);
-        const ext = rawUrl.endsWith('.png') ? 'png' : 'jpg';
-        intermediateUrl = await downloadAndStore(rawUrl, `${jobId}_step${currentStep}.${ext}`, 'uploads');
+        intermediateUrl = await downloadAndStore(rawUrl, `${jobId}_step${currentStep}.${extFromUrl(rawUrl)}`, 'uploads');
       }
 
       const webhookUrl = `${WEBHOOK_BASE}/api/webhook/replicate`;

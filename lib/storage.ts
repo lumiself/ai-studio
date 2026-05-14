@@ -33,15 +33,33 @@ export async function uploadToStorage(
 }
 
 // Downloads a URL and re-uploads it to storage. Used by the webhook handler.
+// Handles both HTTP URLs and base64 data URLs (e.g. from openai/gpt-image-2).
 export async function downloadAndStore(
   sourceUrl: string,
   filename: string,
   folder: StorageFolder,
 ): Promise<string> {
-  const res = await fetch(sourceUrl);
-  if (!res.ok) throw new Error(`Failed to download ${sourceUrl}: ${res.status}`);
-  const buffer = Buffer.from(await res.arrayBuffer());
+  let buffer: Buffer;
+  if (sourceUrl.startsWith('data:')) {
+    const commaIdx = sourceUrl.indexOf(',');
+    buffer = Buffer.from(sourceUrl.slice(commaIdx + 1), 'base64');
+  } else {
+    const res = await fetch(sourceUrl);
+    if (!res.ok) throw new Error(`Failed to download ${sourceUrl}: ${res.status}`);
+    buffer = Buffer.from(await res.arrayBuffer());
+  }
   return uploadToStorage(buffer, filename, folder);
+}
+
+// Extracts the file extension from a URL or data URL.
+export function extFromUrl(url: string): string {
+  if (url.startsWith('data:')) {
+    const mime = url.slice(5, url.indexOf(';'));
+    if (mime === 'image/png') return 'png';
+    if (mime === 'image/webp') return 'webp';
+    return 'jpg';
+  }
+  return url.endsWith('.png') ? 'png' : url.endsWith('.webp') ? 'webp' : 'jpg';
 }
 
 // Deletes a file from shared hosting by its public URL.
