@@ -3,7 +3,7 @@ import type { Action } from '@/lib/types';
 const action: Action = {
   id: 'upscale_4x',
   name: 'Upscale 4×',
-  description: 'Quadruples image resolution using Real-ESRGAN super-resolution.',
+  description: 'Quadruples image resolution with AI super-resolution.',
   category: 'Enhancement',
   icon: '🔎',
   pipeline: 'upscale',

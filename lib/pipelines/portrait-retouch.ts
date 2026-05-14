@@ -2,7 +2,7 @@ import type { Pipeline } from '@/lib/types';
 
 // Two-step pipeline: face restoration → crisp upscale
 export const DEFAULT_MODEL_GFPGAN = 'flux-kontext-apps/restore-image';
-export const DEFAULT_MODEL_UPSCALE = 'recraft-ai/recraft-crisp-upscale';
+export const DEFAULT_MODEL_UPSCALE = 'prunaai/p-image-upscale';
 
 const pipeline: Pipeline = {
   id: 'portrait_retouch',
@@ -18,6 +18,8 @@ const pipeline: Pipeline = {
       model: DEFAULT_MODEL_UPSCALE,
       buildInput: (ctx) => ({
         image: ctx.intermediateUrl ?? ctx.inputUrl,
+        upscale_mode: 'factor',
+        factor: ctx.scale ?? 4,
       }),
       processOutput: async (output) => output as string,
     },
