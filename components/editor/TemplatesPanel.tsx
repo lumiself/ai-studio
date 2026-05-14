@@ -193,7 +193,7 @@ export default function TemplatesPanel({
                 className="aipe-hd-toggle__input"
               />
               <span className="aipe-hd-toggle__label">
-                High Resolution (8 MP upscale)
+                High Resolution
                 <span className="aipe-hd-toggle__cost">+1 token</span>
               </span>
             </label>
