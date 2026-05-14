@@ -743,6 +743,40 @@
 /* ── Utilities ──────────────────────────────────────────────────────────── */
 .aipe-hidden { display: none !important; }
 
+/* ── HD Output toggle ───────────────────────────────────────────────────── */
+.aipe-hd-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 0 4px;
+}
+.aipe-hd-toggle__input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--aipe-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.aipe-hd-toggle__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--aipe-text);
+  user-select: none;
+}
+.aipe-hd-toggle__cost {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--aipe-text-muted);
+  background: var(--aipe-surface-hover);
+  border: 1px solid var(--aipe-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
 /* ── Mobile tab bar (hidden on desktop) ────────────────────────────────── */
 .aipe-mobile-tabs { display: none; }
 

@@ -6,7 +6,8 @@ import { getPipeline, resolveModel } from '@/lib/pipelines';
 import { getAction } from '@/lib/actions';
 import { getPreset } from '@/lib/presets';
 
-const TOKEN_COST = 1; // tokens per image processed
+const TOKEN_COST = 1;
+const HD_TOKEN_COST = 1; // extra token charged when highRes is requested
 const WEBHOOK_BASE = process.env.NEXT_PUBLIC_APP_URL
   ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
@@ -21,9 +22,10 @@ export async function POST(req: NextRequest) {
     actionId: string;
     bgPrompt?: string;
     presetInputValues?: Record<string, string>;
+    highRes?: boolean;
   };
 
-  const { jobId, inputUrl, actionId, bgPrompt, presetInputValues } = body;
+  const { jobId, inputUrl, actionId, bgPrompt, presetInputValues, highRes } = body;
   if (!jobId || !inputUrl || !actionId) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -54,12 +56,13 @@ export async function POST(req: NextRequest) {
   if (!pipeline) return NextResponse.json({ error: 'Unknown pipeline' }, { status: 400 });
 
   // Check and deduct tokens before touching Replicate.
+  const totalCost = TOKEN_COST + (highRes ? HD_TOKEN_COST : 0);
   const balance = await getBalance(user.id);
-  if (!balance || balance.balance < TOKEN_COST) {
+  if (!balance || balance.balance < totalCost) {
     return NextResponse.json({ error: 'Insufficient token balance' }, { status: 402 });
   }
 
-  const deducted = await deductTokens(user.id, TOKEN_COST);
+  const deducted = await deductTokens(user.id, totalCost);
   if (!deducted) return NextResponse.json({ error: 'Insufficient token balance' }, { status: 402 });
 
   // Resolve which model to use for step 0 (accounting for admin overrides).
@@ -113,6 +116,7 @@ export async function POST(req: NextRequest) {
     bg_prompt: resolvedBgPrompt ?? null,
     scale: action?.scale ?? null,
     face_enhance: action?.face_enhance ?? null,
+    high_res: highRes ?? false,
   });
 
   if (dbError) {
