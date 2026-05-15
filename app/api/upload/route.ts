@@ -35,8 +35,9 @@ export async function POST(req: NextRequest) {
   try {
     inputUrl = await uploadToStorage(buffer, filename, 'uploads');
   } catch (err) {
-    console.error('Storage upload failed:', err);
-    return NextResponse.json({ error: 'Failed to upload image' }, { status: 500 });
+    const msg = err instanceof Error ? err.message : 'Failed to upload image';
+    console.error('Storage upload failed:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 
   let thumbUrl: string | undefined;
