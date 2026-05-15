@@ -299,15 +299,46 @@ export default function EditorPage() {
     setUploading(true);
     setUploadError(null);
     try {
+      // Get a short-lived token so the browser can upload directly to storage,
+      // bypassing Vercel's body size limit entirely.
+      const tokenRes = await fetch('/api/upload-token');
+      if (!tokenRes.ok) {
+        const body = await tokenRes.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? 'Failed to get upload token');
+      }
+      const { token, uploadUrl } = await tokenRes.json() as { token: string; uploadUrl: string };
+
       await Promise.all(files.map(async (file) => {
+        const jobId = crypto.randomUUID();
+        const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        const filename = `${jobId}.${ext}`;
+
         const formData = new FormData();
+        formData.append('folder', 'uploads');
+        formData.append('filename', filename);
         formData.append('file', file);
-        const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({})) as { error?: string };
-          throw new Error(body.error ?? `Upload failed (${res.status})`);
+
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'X-Upload-Token': token },
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const body = await uploadRes.json().catch(() => ({})) as { error?: string };
+          throw new Error(body.error ?? `Upload failed (${uploadRes.status})`);
         }
-        const { jobId, inputUrl, thumbUrl } = await res.json() as { jobId: string; inputUrl: string; thumbUrl: string };
+        const { url: inputUrl } = await uploadRes.json() as { url: string };
+
+        // Register with server to create thumbnail (small JSON request, no file body)
+        const regRes = await fetch('/api/register-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, inputUrl }),
+        });
+        const { thumbUrl } = regRes.ok
+          ? await regRes.json() as { thumbUrl?: string }
+          : {};
+
         dispatch({ type: 'ADD_TO_LIBRARY', image: { id: jobId, url: inputUrl, thumbUrl, name: file.name } });
       }));
       return true;
