@@ -26,6 +26,7 @@ create table if not exists jobs (
   bg_prompt text,                 -- background description prompt
   scale integer,
   face_enhance boolean,
+  high_res boolean not null default false,
   error text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
