@@ -171,6 +171,8 @@ export default function EditorPage() {
   const [uploading, setUploading] = useState(false);
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   const abortRef = useRef(false);
+  const imagesRef = useRef(state.images);
+  useEffect(() => { imagesRef.current = state.images; }, [state.images]);
 
   // ── Load custom presets on mount ──────────────────────────────────────
   useEffect(() => {
@@ -241,55 +243,51 @@ export default function EditorPage() {
       .catch(() => {});
   }, []);
 
-  // ── Poll active jobs every 4 seconds ──────────────────────────────────
+  // ── Subscribe to job updates via Supabase Realtime ────────────────────
   useEffect(() => {
-    const activeJobs = state.images.filter(i => i.status === 'processing' && i.jobId);
-    if (!activeJobs.length) return;
+    const supabase = createBrowserSupabase();
+    let channel: ReturnType<typeof supabase.channel> | undefined;
 
-    const ids = activeJobs.map(i => i.jobId!).join(',');
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/jobs?ids=${ids}`);
-        if (!res.ok) return;
-        const { jobs } = await res.json() as {
-          jobs: Array<{ id: string; status: string; output_url?: string; error?: string }>;
-        };
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
 
-        for (const job of jobs) {
-          if (job.status === 'succeeded' && job.output_url) {
-            const image = state.images.find(i => i.jobId === job.id);
-            if (!image) continue;
-            dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'done', outputUrl: job.output_url });
-            dispatch({
-              type: 'ADD_RESULT',
-              result: {
-                id: crypto.randomUUID(),
-                imageId: image.id,
-                imageName: image.name,
-                inputUrl: image.previewUrl,
-                outputUrl: job.output_url,
-                selected: false,
-              },
-            });
-            setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
-          } else if (job.status === 'failed') {
-            const image = state.images.find(i => i.jobId === job.id);
-            if (!image) continue;
-            dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'failed', error: job.error ?? 'Failed' });
-            setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
+      channel = supabase
+        .channel('job-updates')
+        .on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `user_id=eq.${user.id}` },
+          (payload) => {
+            const job = payload.new as { id: string; status: string; output_url: string | null; error: string | null };
+            const image = imagesRef.current.find(i => i.jobId === job.id);
+            if (!image) return;
+
+            if (job.status === 'succeeded' && job.output_url) {
+              dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'done', outputUrl: job.output_url });
+              dispatch({
+                type: 'ADD_RESULT',
+                result: {
+                  id: crypto.randomUUID(),
+                  imageId: image.id,
+                  imageName: image.name,
+                  inputUrl: image.previewUrl,
+                  outputUrl: job.output_url,
+                  selected: false,
+                },
+              });
+              setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
+            } else if (job.status === 'failed') {
+              dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'failed', error: job.error ?? 'Failed' });
+              setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
+            }
           }
-        }
+        )
+        .subscribe();
+    });
 
-      } catch {
-        // Polling errors are non-fatal; retry next tick.
-      }
-    }, 4000);
+    return () => { if (channel) supabase.removeChannel(channel); };
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [state.images]);
-
-  // The polling interval can't reliably detect when the last job finishes because
-  // it's cleaned up before the check runs. Watch reactively instead.
+  // Realtime delivers updates asynchronously; watch reactively to clear the processing flag.
   useEffect(() => {
     if (state.processing && !state.images.some(i => i.status === 'processing')) {
       dispatch({ type: 'SET_PROCESSING', value: false });
