@@ -169,6 +169,7 @@ export default function EditorPage() {
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>('upload');
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   const abortRef = useRef(false);
   const imagesRef = useRef(state.images);
@@ -294,17 +295,25 @@ export default function EditorPage() {
     }
   }, [state.images, state.processing]);
 
-  const handleUploadToServer = useCallback(async (files: File[]) => {
+  const handleUploadToServer = useCallback(async (files: File[]): Promise<boolean> => {
     setUploading(true);
+    setUploadError(null);
     try {
       await Promise.all(files.map(async (file) => {
         const formData = new FormData();
         formData.append('file', file);
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
-        if (!res.ok) return;
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({})) as { error?: string };
+          throw new Error(body.error ?? `Upload failed (${res.status})`);
+        }
         const { jobId, inputUrl, thumbUrl } = await res.json() as { jobId: string; inputUrl: string; thumbUrl: string };
         dispatch({ type: 'ADD_TO_LIBRARY', image: { id: jobId, url: inputUrl, thumbUrl, name: file.name } });
       }));
+      return true;
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Upload failed');
+      return false;
     } finally {
       setUploading(false);
     }
@@ -494,6 +503,7 @@ export default function EditorPage() {
           onAddFromLibrary={handleAddFromLibrary}
           onDeleteFromLibrary={handleDeleteFromLibrary}
           uploading={uploading}
+          uploadError={uploadError}
           className={mobilePanel === 'upload' ? 'aipe-panel--mobile-active' : ''}
         />
         <TemplatesPanel
