@@ -1,0 +1,5 @@
+# Base64-encoded images are ~33% larger than the source file.
+# A 20 MB original becomes ~27 MB in transit, so we need headroom above that.
+php_value post_max_size 35M
+php_value upload_max_filesize 35M
+php_value memory_limit 64M
