@@ -5,7 +5,7 @@ import type { QueuedImage, LibraryImage } from '@/lib/types';
 interface Props {
   images: QueuedImage[];
   libraryImages: LibraryImage[];
-  onUploadToServer: (files: File[]) => Promise<void>;
+  onUploadToServer: (files: File[]) => Promise<boolean>;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
   onSelectAll: () => void;
@@ -13,12 +13,13 @@ interface Props {
   onAddFromLibrary: (img: LibraryImage) => void;
   onDeleteFromLibrary: (img: LibraryImage) => void;
   uploading?: boolean;
+  uploadError?: string | null;
   className?: string;
 }
 
 export default function UploadPanel({
   images, libraryImages, onUploadToServer, onToggle, onRemove,
-  onSelectAll, onDeselectAll, onAddFromLibrary, onDeleteFromLibrary, uploading = false, className = '',
+  onSelectAll, onDeselectAll, onAddFromLibrary, onDeleteFromLibrary, uploading = false, uploadError = null, className = '',
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<'upload' | 'library'>('upload');
@@ -26,8 +27,8 @@ export default function UploadPanel({
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const imgs = Array.from(files).filter(f => f.type.startsWith('image/'));
     if (!imgs.length) return;
-    await onUploadToServer(imgs);
-    setTab('library');
+    const ok = await onUploadToServer(imgs);
+    if (ok) setTab('library');
   }, [onUploadToServer]);
 
   const onDrop = (e: React.DragEvent) => {
@@ -76,6 +77,10 @@ export default function UploadPanel({
 
         {/* ── Upload tab ─────────────────────────────────────────── */}
         {tab === 'upload' && (
+          <>
+          {uploadError && (
+            <p className="aipe-upload-error">{uploadError}</p>
+          )}
           <div
             className={`aipe-drop-zone${uploading ? ' aipe-drop-zone--loading' : ''}`}
             onClick={() => { if (!uploading) inputRef.current?.click(); }}
@@ -106,6 +111,7 @@ export default function UploadPanel({
               onChange={e => { if (e.target.files) handleFiles(e.target.files); }}
             />
           </div>
+          </>
         )}
 
         {/* ── Library tab ─────────────────────────────────────────── */}
