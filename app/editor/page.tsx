@@ -346,7 +346,7 @@ export default function EditorPage() {
     const actionId = state.selectedTemplateId ?? state.selectedPresetId;
     if (!actionId) return;
 
-    const CONCURRENCY = 5;
+    const CONCURRENCY = 2;
     const queue = [...selected];
     let active = 0;
 
