@@ -8,7 +8,7 @@ const pipeline: Pipeline = {
       buildInput: (ctx) => ({
         prompt: ctx.bgPrompt ?? 'Replace the background with a clean professional studio backdrop.',
         input_images: [ctx.inputUrl],
-        quality: 'auto',
+        quality: 'medium',
         output_format: 'png',
         number_of_images: 1,
         background: 'auto',
