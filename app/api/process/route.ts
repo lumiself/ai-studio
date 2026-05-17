@@ -23,9 +23,10 @@ export async function POST(req: NextRequest) {
     bgPrompt?: string;
     presetInputValues?: Record<string, string>;
     highRes?: boolean;
+    lessStrict?: boolean;
   };
 
-  const { jobId, inputUrl, actionId, bgPrompt, presetInputValues, highRes } = body;
+  const { jobId, inputUrl, actionId, bgPrompt, presetInputValues, highRes, lessStrict } = body;
   if (!jobId || !inputUrl || !actionId) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
@@ -67,7 +68,9 @@ export async function POST(req: NextRequest) {
 
   // Resolve which model to use for step 0 (accounting for admin overrides).
   const overrides = await getModelOverrides();
-  const model = resolveModel(pipeline, 0, overrides);
+  const resolvedModel = resolveModel(pipeline, 0, overrides);
+  const step0 = pipeline.steps[0];
+  const model = (lessStrict && step0?.alternativeModel) ? step0.alternativeModel : resolvedModel;
   if (!model) return NextResponse.json({ error: 'Pipeline model not configured' }, { status: 500 });
 
   // Resolve the bg_prompt — substitute {key} placeholders for presets.
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
     bgPrompt: resolvedBgPrompt,
     scale: action?.scale,
     faceEnhance: action?.face_enhance,
+    lessStrict: lessStrict ?? false,
   };
 
   const stepFn = pipeline.steps[0]?.buildInput;
