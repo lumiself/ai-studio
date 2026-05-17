@@ -18,6 +18,7 @@ interface EditorState {
   presetInputValues: Record<string, string>;
   customPrompt: string;
   highRes: boolean;
+  lessStrict: boolean;
   processing: boolean;
   tokenBalance: number;
 }
@@ -34,6 +35,7 @@ type Action =
   | { type: 'SET_PRESET_INPUT'; key: string; value: string }
   | { type: 'SET_CUSTOM_PROMPT'; value: string }
   | { type: 'TOGGLE_HIGH_RES' }
+  | { type: 'TOGGLE_LESS_STRICT' }
   | { type: 'SET_PROCESSING'; value: boolean }
   | { type: 'SET_TOKEN_BALANCE'; value: number }
   | { type: 'UPDATE_IMAGE_STATUS'; id: string; status: QueuedImage['status']; outputUrl?: string; error?: string; jobId?: string }
@@ -81,6 +83,8 @@ function reducer(state: EditorState, action: Action): EditorState {
       return { ...state, customPrompt: action.value };
     case 'TOGGLE_HIGH_RES':
       return { ...state, highRes: !state.highRes };
+    case 'TOGGLE_LESS_STRICT':
+      return { ...state, lessStrict: !state.lessStrict };
     case 'SET_PROCESSING':
       return { ...state, processing: action.value };
     case 'SET_TOKEN_BALANCE':
@@ -158,6 +162,7 @@ const INITIAL_STATE: EditorState = {
   presetInputValues: {},
   customPrompt: '',
   highRes: false,
+  lessStrict: false,
   processing: false,
   tokenBalance: 0,
 };
@@ -426,6 +431,7 @@ export default function EditorPage() {
             bgPrompt: state.customPrompt || undefined,
             presetInputValues: Object.keys(state.presetInputValues).length > 0 ? state.presetInputValues : undefined,
             highRes: state.highRes || undefined,
+            lessStrict: state.lessStrict || undefined,
           }),
         });
 
@@ -551,6 +557,8 @@ export default function EditorPage() {
           onCustomPromptChange={v => dispatch({ type: 'SET_CUSTOM_PROMPT', value: v })}
           highRes={state.highRes}
           onHighResChange={() => dispatch({ type: 'TOGGLE_HIGH_RES' })}
+          lessStrict={state.lessStrict}
+          onLessStrictChange={() => dispatch({ type: 'TOGGLE_LESS_STRICT' })}
           selectedImageCount={selectedCount}
           processing={state.processing}
           batchStats={batchStats}

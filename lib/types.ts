@@ -8,10 +8,12 @@ export interface StepContext {
   scale?: number;
   faceEnhance?: boolean;
   intermediateUrl?: string;
+  lessStrict?: boolean;
 }
 
 export interface PipelineStep {
   model: string | null;
+  alternativeModel?: string;
   buildInput?: (ctx: StepContext) => Record<string, unknown>;
   // Returns the URL to use as input for the next step, or the final output URL.
   processOutput?: (output: unknown, ctx: StepContext) => Promise<string>;

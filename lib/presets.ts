@@ -3,16 +3,6 @@ import type { Preset } from './types';
 export const PRESETS: Preset[] = [
   // ── Birthday ──────────────────────────────────────────────────────────
   {
-    id: 'birthday_green_silver',
-    name: 'Green & Silver',
-    description: 'Elegant green and silver balloon arch setup with number balloons.',
-    category: 'Birthday',
-    thumbnail: '/presets/green-ballon-thumb.jpg',
-    pipeline: 'gpt_bg',
-    bg_prompt: 'Using the second image as the exact visual reference for the background scene, replace the background and seat/chair in the first image to match: dark emerald green studio backdrop, mixed chrome green, black, and silver balloon garland arch, large silver foil number {age} balloons prominently displayed, small birthday cake on a white side table, velvet chaise lounge as the seat, dramatic studio lighting. Keep the person, clothing, skin, hair, and pose completely unchanged.',
-    inputs: [{ type: 'number', id: 'age', label: 'Age', required: true, min: 1, max: 120, placeholder: 'e.g. 18' }],
-  },
-  {
     id: 'birthday_white_gold',
     name: 'White & Gold',
     description: 'Luxurious white and gold birthday setup with confetti.',
@@ -51,37 +41,7 @@ export const PRESETS: Preset[] = [
       { type: 'text',   id: 'name', label: 'Name (optional)',  required: false, placeholder: 'e.g. Darius' },
     ],
   },
-  {
-    id: 'birthday_black_balloons',
-    name: 'Black Balloons',
-    description: 'Stand between large black marquee light-up numbers with black and rose gold balloons.',
-    category: 'Birthday',
-    thumbnail: '/presets/black-balloons-thumb.jpg',
-    pipeline: 'gpt_bg',
-    bg_prompt: 'Using the second image as the exact visual reference for the background, replace only the background in the first image to match: a clean light grey/white studio backdrop, two large black marquee light-up number signs spelling {age} positioned on either side of the subject so the subject stands between them, clusters of black and rose gold metallic balloons on both sides. Keep the person, clothing, skin, hair, and pose completely unchanged.',
-    inputs: [{ type: 'number', id: 'age', label: 'Age', required: true, min: 1, max: 120, placeholder: 'e.g. 25' }],
-  },
-  {
-    id: 'birthday_pink_clean',
-    name: 'Pink Clean',
-    description: 'Deep pink rose flower wall with balloon arch and loose pink balloons.',
-    category: 'Birthday',
-    thumbnail: '/presets/pink-clean-thumb.jpg',
-    pipeline: 'gpt_bg',
-    bg_prompt: 'Using the second image as the exact visual reference for the background, replace only the background in the first image to match: a full lush deep pink/fuchsia rose flower wall covering the entire backdrop, a pink and white balloon garland arch framing the top and sides, loose pink balloons scattered on a clean white floor. Keep the person, clothing, skin, hair, and pose completely unchanged.',
-    inputs: [],
-  },
   // ── Portrait ──────────────────────────────────────────────────────────
-  {
-    id: 'portrait_pink_studio',
-    name: 'Pink Studio',
-    description: 'Seated pose on a white cube against a deep pink backdrop with a glowing halo.',
-    category: 'Portrait',
-    thumbnail: '/presets/pink-studio-thumb.jpg',
-    pipeline: 'gpt_bg',
-    bg_prompt: 'Using the second image as the exact visual reference for the background scene, replace the background and seat/chair in the first image to match: deep dusty rose/mauve studio backdrop, large soft circular spotlight halo glowing on the backdrop behind the subject, subject seated on a clean white cube/box pedestal. Keep the person, clothing, skin, hair, and pose completely unchanged.',
-    inputs: [],
-  },
   {
     id: 'portrait_studio_white',
     name: 'Studio White',

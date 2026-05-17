@@ -17,6 +17,8 @@ interface Props {
   onCustomPromptChange: (v: string) => void;
   highRes: boolean;
   onHighResChange: () => void;
+  lessStrict: boolean;
+  onLessStrictChange: () => void;
   selectedImageCount: number;
   processing: boolean;
   batchStats: BatchStats;
@@ -33,6 +35,7 @@ export default function TemplatesPanel({
   presetInputValues, onPresetInputChange,
   customPrompt, onCustomPromptChange,
   highRes, onHighResChange,
+  lessStrict, onLessStrictChange,
   selectedImageCount, processing,
   batchStats, onProcessAll, onAbort,
   customPresets = [],
@@ -50,6 +53,11 @@ export default function TemplatesPanel({
   const selectedPreset = allPresets.find(p => p.id === selectedPresetId);
   const selectedAction  = ACTIONS.find(a => a.id === selectedTemplateId);
   const showPrompt = mode === 'actions' && selectedAction?.has_prompt;
+
+  const selectedPipelineId = mode === 'actions'
+    ? selectedAction?.pipeline
+    : selectedPreset?.pipeline;
+  const showLessStrict = !!selectedPipelineId?.startsWith('gpt_');
 
   const progressPct = batchStats.total > 0
     ? Math.round((batchStats.done + batchStats.failed) / batchStats.total * 100)
@@ -197,6 +205,17 @@ export default function TemplatesPanel({
                 <span className="aipe-hd-toggle__cost">+1 token</span>
               </span>
             </label>
+            {showLessStrict && (
+              <label className="aipe-hd-toggle">
+                <input
+                  type="checkbox"
+                  checked={lessStrict}
+                  onChange={onLessStrictChange}
+                  className="aipe-hd-toggle__input"
+                />
+                <span className="aipe-hd-toggle__label">Less strict</span>
+              </label>
+            )}
             <button
               className="aipe-btn aipe-btn--primary"
               disabled={selectedImageCount === 0 || (!selectedTemplateId && !selectedPresetId)}
