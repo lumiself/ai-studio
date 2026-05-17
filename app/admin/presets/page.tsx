@@ -10,10 +10,13 @@ interface Preset {
   bg_prompt: string;
 }
 
+const EMPTY_FORM = { name: '', description: '', category: '', bg_prompt: '', thumbnail_url: '' };
+
 export default function PresetsPage() {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', description: '', category: '', bg_prompt: '', thumbnail_url: '' });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState('');
 
   const loadPresets = async () => {
@@ -24,22 +27,51 @@ export default function PresetsPage() {
 
   useEffect(() => { loadPresets(); }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('');
-    const res = await fetch('/api/presets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setStatus('Preset created');
-      setForm({ name: '', description: '', category: '', bg_prompt: '', thumbnail_url: '' });
-      loadPresets();
+    if (editingId) {
+      const res = await fetch('/api/presets', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingId, ...form }),
+      });
+      if (res.ok) {
+        setStatus('Preset updated');
+        setForm(EMPTY_FORM);
+        setEditingId(null);
+        loadPresets();
+      } else {
+        const { error } = await res.json();
+        setStatus(`Error: ${error}`);
+      }
     } else {
-      const { error } = await res.json();
-      setStatus(`Error: ${error}`);
+      const res = await fetch('/api/presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setStatus('Preset created');
+        setForm(EMPTY_FORM);
+        loadPresets();
+      } else {
+        const { error } = await res.json();
+        setStatus(`Error: ${error}`);
+      }
     }
+  };
+
+  const handleEdit = (p: Preset) => {
+    setEditingId(p.id);
+    setForm({ name: p.name, description: p.description, category: p.category, bg_prompt: p.bg_prompt, thumbnail_url: p.thumbnail_url ?? '' });
+    setStatus('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setStatus('');
   };
 
   const handleDelete = async (id: string) => {
@@ -48,7 +80,10 @@ export default function PresetsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),
     });
-    if (res.ok) loadPresets();
+    if (res.ok) {
+      if (editingId === id) { setEditingId(null); setForm(EMPTY_FORM); }
+      loadPresets();
+    }
   };
 
   return (
@@ -56,8 +91,8 @@ export default function PresetsPage() {
       <h1>Preset Builder</h1>
 
       <section className="admin-section">
-        <h2>Create Preset</h2>
-        <form onSubmit={handleCreate} className="admin-form">
+        <h2>{editingId ? 'Edit Preset' : 'Create Preset'}</h2>
+        <form onSubmit={handleSubmit} className="admin-form">
           {([
             ['name', 'Name', 'e.g. Golden Hour'],
             ['category', 'Category', 'e.g. Outdoor'],
@@ -75,7 +110,10 @@ export default function PresetsPage() {
               />
             </div>
           ))}
-          <button type="submit" className="admin-btn">Create Preset</button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" className="admin-btn">{editingId ? 'Update Preset' : 'Create Preset'}</button>
+            {editingId && <button type="button" className="admin-btn" onClick={handleCancelEdit}>Cancel</button>}
+          </div>
           {status && <p className="admin-status">{status}</p>}
         </form>
       </section>
@@ -87,11 +125,12 @@ export default function PresetsPage() {
             <thead><tr><th>Name</th><th>Category</th><th>Prompt</th><th></th></tr></thead>
             <tbody>
               {presets.map(p => (
-                <tr key={p.id}>
+                <tr key={p.id} style={editingId === p.id ? { background: 'rgba(99,102,241,0.08)' } : undefined}>
                   <td>{p.name}</td>
                   <td>{p.category}</td>
                   <td><small>{p.bg_prompt.slice(0, 60)}{p.bg_prompt.length > 60 ? '…' : ''}</small></td>
-                  <td>
+                  <td style={{ display: 'flex', gap: '6px' }}>
+                    <button className="admin-btn" onClick={() => handleEdit(p)}>Edit</button>
                     <button className="admin-btn admin-btn--danger" onClick={() => handleDelete(p.id)}>Delete</button>
                   </td>
                 </tr>

@@ -42,6 +42,31 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ preset: data }, { status: 201 });
 }
 
+// PATCH — update a custom preset (admin only)
+export async function PATCH(req: NextRequest) {
+  const supabase = await createServerSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const db = createServiceSupabase();
+  const { data: tokenRow } = await db.from('user_tokens').select('is_admin').eq('user_id', user.id).single();
+  if (!tokenRow?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
+  const body = await req.json();
+  const { id, name, description, category, thumbnail_url, bg_prompt } = body;
+  if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+  if (!name || !category) return NextResponse.json({ error: 'name and category required' }, { status: 400 });
+
+  const { data, error } = await db.from('custom_presets').update({
+    name, description: description ?? '', category,
+    thumbnail_url: thumbnail_url || null,
+    bg_prompt: bg_prompt ?? '',
+  }).eq('id', id).select().single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ preset: data });
+}
+
 // DELETE — remove a custom preset (admin only)
 export async function DELETE(req: NextRequest) {
   const supabase = await createServerSupabase();
