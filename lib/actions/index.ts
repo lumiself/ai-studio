@@ -16,6 +16,8 @@ import skinRefine       from './skin-refine';
 import upscale2x        from './upscale-2x';
 import upscale4x        from './upscale-4x';
 import hdEnhance        from './hd-enhance';
+import studioPop        from './studio-pop';
+import outdoorPop       from './outdoor-pop';
 
 export const ACTIONS: Action[] = [
   removeBackground,
@@ -31,6 +33,8 @@ export const ACTIONS: Action[] = [
   upscale2x,
   upscale4x,
   hdEnhance,
+  studioPop,
+  outdoorPop,
 ];
 
 export const ACTION_CATEGORIES = [...new Set(ACTIONS.map(a => a.category))];
