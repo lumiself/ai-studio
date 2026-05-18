@@ -8,7 +8,7 @@ const action: Action = {
   icon: '🌤️',
   pipeline: 'gpt_retouch',
   has_prompt: false,
-  bg_prompt: 'Transform this photo to look like it was shot outdoors with a high-end camera and a skilled photographer. Apply natural directional lighting as if from the sun or open sky: lift the shadows on the subject\'s face to reveal detail, add gentle warmth and golden-hour quality to the light, and ensure the subject is sharply in focus while the background has natural environmental depth and slight blur from a wide aperture. Enhance sky and environment tones to look vivid and rich without being overdone. Improve overall exposure, dynamic range, and colour to match a professional outdoor portrait. Do not alter facial features, clothing, or the subject\'s appearance — only improve the light quality, depth, and technical finish of the photo.',
+  bg_prompt: 'Transform this photo to look like it was shot outdoors on a Hasselblad X2D or Leica SL2 with an 85mm f/1.4 lens. Apply natural directional lighting as if from golden-hour sun or open shade with a reflector: lift the shadows on the subject\'s face to reveal detail, add gentle warmth and directional quality to the light, and render the subject with the sharpness and tonal richness of a large-format sensor. Enhance sky and environment tones to look vivid and rich without being overdone. Improve overall exposure, dynamic range, and colour to match a professional outdoor portrait shot with premium glass. Do not alter facial features, clothing, or the subject\'s appearance — only improve the light quality and technical finish of the photo.',
 };
 
 export default action;
