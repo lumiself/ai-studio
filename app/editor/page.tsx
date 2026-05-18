@@ -293,6 +293,51 @@ export default function EditorPage() {
     return () => { if (channel) supabase.removeChannel(channel); };
   }, []);
 
+  // Fallback polling — catches completions that Realtime missed (dropped subscription, etc.)
+  useEffect(() => {
+    const processingImages = imagesRef.current.filter(i => i.status === 'processing' && i.jobId);
+    if (processingImages.length === 0) return;
+
+    const ids = processingImages.map(i => i.jobId!).join(',');
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/jobs?ids=${ids}`);
+        if (!res.ok || cancelled) return;
+        const { jobs } = await res.json() as { jobs: { id: string; status: string; output_url: string | null; error: string | null }[] };
+        for (const job of jobs) {
+          if (cancelled) break;
+          const image = imagesRef.current.find(i => i.jobId === job.id);
+          if (!image) continue;
+          if (job.status === 'succeeded' && job.output_url) {
+            dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'done', outputUrl: job.output_url });
+            dispatch({
+              type: 'ADD_RESULT',
+              result: {
+                id: crypto.randomUUID(),
+                imageId: image.id,
+                imageName: image.name,
+                inputUrl: image.previewUrl,
+                outputUrl: job.output_url,
+                selected: false,
+              },
+            });
+            setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
+          } else if (job.status === 'failed') {
+            dispatch({ type: 'UPDATE_IMAGE_STATUS', id: image.id, status: 'failed', error: job.error ?? 'Failed' });
+            setProcessingIds(prev => { const s = new Set(prev); s.delete(image.id); return s; });
+          }
+        }
+      } catch {
+        // silent — Realtime is primary, this is best-effort
+      }
+    };
+
+    const timer = setInterval(poll, 4000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [processingIds]);
+
   // Realtime delivers updates asynchronously; watch reactively to clear the processing flag.
   useEffect(() => {
     if (state.processing && !state.images.some(i => i.status === 'processing')) {
