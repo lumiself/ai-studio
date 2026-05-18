@@ -44,11 +44,27 @@ export async function downloadAndStore(
     const commaIdx = sourceUrl.indexOf(',');
     buffer = Buffer.from(sourceUrl.slice(commaIdx + 1), 'base64');
   } else {
-    const res = await fetch(sourceUrl);
-    if (!res.ok) throw new Error(`Failed to download ${sourceUrl}: ${res.status}`);
-    buffer = Buffer.from(await res.arrayBuffer());
+    buffer = await fetchWithRetry(sourceUrl);
   }
   return uploadToStorage(buffer, filename, folder);
+}
+
+// Fetches a URL with up to 3 attempts and exponential backoff.
+// Only retries on network errors — HTTP errors (4xx/5xx) throw immediately.
+async function fetchWithRetry(url: string): Promise<Buffer> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, attempt * 1000));
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to download ${url}: ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('Failed to download')) throw err;
+      lastErr = err;
+    }
+  }
+  throw lastErr;
 }
 
 // Extracts the file extension from a URL or data URL.
